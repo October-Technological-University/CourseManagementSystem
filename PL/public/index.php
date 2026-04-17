@@ -1,4 +1,7 @@
 <?php
+define('BASE_PATH', __DIR__ . '\\..\\..\\');
+
+require_once BASE_PATH . 'DAL/Database/DBContext.php';
 
 require_once __DIR__ . '/../Controllers/BaseController.php';
 
@@ -15,15 +18,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Parse URI and remove base path
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = str_replace('/CourseManagementSystem/PL/public', '', $uri);
+$uri = preg_replace('#/CourseManagementSystem/PL/public/(index(\.php)?)?#', '', $uri);
 $uri = trim($uri, '/');
 $method = $_SERVER['REQUEST_METHOD'];
+
+/* // Ensure database connection is initialized before handling any routes
+DBContext::getInstance();
+ */
 
 // ============================================================
 // ROUTER CONFIGURATION
 // Register your routes here in the format:
 // 'METHOD' => ['route/path' => callback]
 // ============================================================
+
+
 
 $router = [
     'GET' => [
@@ -65,5 +74,8 @@ $router = [
 if (isset($router[$method][$uri])) {
     $router[$method][$uri]();
 } else {
+    // For debugging later.
+    // echo '<br>' . $method . $uri . ' not found <br> <br>';
+
     BaseController::error('Route not found', 404);
 }
