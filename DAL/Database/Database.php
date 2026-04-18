@@ -22,5 +22,9 @@ class Database
         $this->conn->close();
     }
 
+    // A method DB Connection Testing
+    public function testConnection() :mysqli_result{
+        return $this->conn->execute_query("SELECT 1;");
+    }
 }
 ?>
