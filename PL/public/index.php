@@ -2,8 +2,8 @@
 define('BASE_PATH', __DIR__ . '\\..\\..\\');
 
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
+require_once BASE_PATH.'/DAL/Database/Database.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
-require_once '..\..\DAL\Database\Database.php';
 
 // CORS Headers
 header("Content-Type: application/json");
