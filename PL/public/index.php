@@ -2,8 +2,8 @@
 define('BASE_PATH', __DIR__ . '\\..\\..\\');
 
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
-
 require_once __DIR__ . '/../Controllers/BaseController.php';
+require_once '..\..\DAL\Database\Database.php';
 
 // CORS Headers
 header("Content-Type: application/json");
@@ -32,12 +32,13 @@ DBContext::getInstance();
 // 'METHOD' => ['route/path' => callback]
 // ============================================================
 
-
+$dbContext = new Database();
 
 $router = [
     'GET' => [
         'health' => fn() => BaseController::success('API is running'),
-        'api/test' => fn() => BaseController::success(['message' => 'Test route works!', 'timestamp' => time()])
+        'api/test' => fn() => BaseController::success(['message' => 'Test route works!', 'timestamp' => time()]),
+        'api/testdatabase' => fn() => BaseController::success(['message'=> ''.$dbContext->testConnection()->data_seek(0),''=> time()]),
     ],
     'POST' => [
         // Example: 'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())
