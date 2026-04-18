@@ -2,7 +2,7 @@
 define('BASE_PATH', __DIR__ . '\\..\\..\\');
 
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
-
+require_once BASE_PATH . 'DAL/Database/InitialCreate.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
 
 // CORS Headers
@@ -25,6 +25,10 @@ $method = $_SERVER['REQUEST_METHOD'];
 /* // Ensure database connection is initialized before handling any routes
 DBContext::getInstance();
  */
+
+// Create tables if they don't exist (idempotent)
+$initial = new InitialCreate();
+$initial->createTables();
 
 // ============================================================
 // ROUTER CONFIGURATION
