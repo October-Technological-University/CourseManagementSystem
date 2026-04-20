@@ -3,8 +3,13 @@ define('BASE_PATH', __DIR__ . '\\..\\..\\');
 
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
 require_once BASE_PATH . 'DAL/Database/InitialCreate.php';
+require_once BASE_PATH . 'DAL/Database/DataSeed.php';
 require_once BASE_PATH . '/DAL/Database/Database.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
+foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
+    require_once $filename;
+}
+
 
 // CORS Headers
 header("Content-Type: application/json");
@@ -27,9 +32,26 @@ $method = $_SERVER['REQUEST_METHOD'];
 DBContext::getInstance();
  */
 
+// Database Context Inittialization
+$dbContext = new Database();
+
 // Create tables if they don't exist (idempotent)
 $initial = new InitialCreate();
 $initial->createTables();
+
+// Seeds Database
+$userRepo = new UserRepository();
+$courseRepo = new CourseRepository();
+$studentRepo = new CourseStudentRepository();
+$fileRepo = new FileAttachmentRepository();
+$seed = new DatabaseSeeding(
+    $userRepo,
+    $courseRepo,
+    $studentRepo,
+    $fileRepo,
+    // SeedingConfig::forTesting(),
+     );
+$seedResult = $seed->seed();
 
 // ============================================================
 // ROUTER CONFIGURATION
@@ -37,13 +59,13 @@ $initial->createTables();
 // 'METHOD' => ['route/path' => callback]
 // ============================================================
 
-$dbContext = new Database();
 
 $router = [
     'GET' => [
         'health' => fn() => BaseController::success('API is running'),
         'api/test' => fn() => BaseController::success(['message' => 'Test route works!', 'timestamp' => time()]),
         'api/testdatabase' => fn() => BaseController::success(['message' => '' . $dbContext->testConnection()->data_seek(0), '' => time()]),
+        'api/checkSeedingResult' => fn() => BaseController::success(['message'=> $seedResult,''=> time()]),
     ],
     'POST' => [
         // Example: 'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())

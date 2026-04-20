@@ -2,5 +2,13 @@
 /8.5.5
 /current
 
+# Ahmed's PC
+/UnitTesting
+/DAL/Tests
+/DAL/Database/DataSeed.php
+
+
 # Ignore environment files
 /config/.env
+
+
