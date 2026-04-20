@@ -20,18 +20,24 @@ class Database
             die("Connection failed: " . $this->conn->connect_error);
         }
 
-        if (!empty($dbName) && !$this->conn->select_db($dbName)) {
-            if ($this->conn->errno === 1049) {
+        if (!empty($dbName)) {
+            // Try to select the database, catching exception if it doesn't exist
+            try {
+                if (!$this->conn->select_db($dbName)) {
+                    throw new Exception("Database not found");
+                }
+            } catch (Exception $e) {
+                // Database doesn't exist, try to create it
                 $escapedDbName = $this->escapeIdentifier($dbName);
-                if (!$this->conn->query("CREATE DATABASE IF NOT EXISTS `$escapedDbName`")) {
+                $databaseCreationResult = $this->conn->query("CREATE DATABASE IF NOT EXISTS `$escapedDbName`");
+                if ($databaseCreationResult === false) {
                     die("Database creation failed: " . $this->conn->error);
                 }
 
+                // Now try to select it again
                 if (!$this->conn->select_db($dbName)) {
-                    die("Database selection failed: " . $this->conn->error);
+                    die("Database selection failed after creation: " . $this->conn->error);
                 }
-            } else {
-                die("Database selection failed: " . $this->conn->error);
             }
         }
     }
