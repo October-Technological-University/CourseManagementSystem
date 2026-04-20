@@ -11,14 +11,14 @@ class CourseRepository extends BaseRepository
      */
     public function create(Course $course)
     {
-        $sql = "INSERT INTO `{$this->table}` (name, code, description, teacher_id, capacity, start_date, end_date, CourseImageId)
+        $sql = "INSERT INTO `{$this->table}` (name, code, description, instructor_id, capacity, start_date, end_date, CourseImageId)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->executePreparedStatement($sql, 'sssiissi', [
             $course->getName(),
             $course->getCode(),
             $course->getDescription(),
-            $course->getTeacherId(),
+            $course->getInstructorId(),
             $course->getCapacity(),
             $course->getStartDate(),
             $course->getEndDate(),
@@ -64,12 +64,12 @@ class CourseRepository extends BaseRepository
     }
 
     /**
-     * Get courses by teacher ID
+     * Get courses by instructor ID
      */
-    public function getByTeacherId($teacher_id)
+    public function getByInstructorId($instructor_id)
     {
-        $sql = "SELECT * FROM `{$this->table}` WHERE teacher_id = ? ORDER BY created_at DESC";
-        $stmt = $this->executePreparedStatement($sql, 'i', [$teacher_id]);
+        $sql = "SELECT * FROM `{$this->table}` WHERE instructor_id = ? ORDER BY created_at DESC";
+        $stmt = $this->executePreparedStatement($sql, 'i', [$instructor_id]);
         $result = $stmt->get_result();
         $courses = [];
 
@@ -105,7 +105,7 @@ class CourseRepository extends BaseRepository
     public function update(Course $course)
     {
         $sql = "UPDATE `{$this->table}` 
-                SET name = ?, code = ?, description = ?, teacher_id = ?, capacity = ?, 
+                SET name = ?, code = ?, description = ?, instructor_id = ?, capacity = ?, 
                     start_date = ?, end_date = ?, CourseImageId = ?
                 WHERE id = ?";
 
@@ -113,7 +113,7 @@ class CourseRepository extends BaseRepository
             $course->getName(),
             $course->getCode(),
             $course->getDescription(),
-            $course->getTeacherId(),
+            $course->getInstructorId(),
             $course->getCapacity(),
             $course->getStartDate(),
             $course->getEndDate(),
@@ -185,7 +185,7 @@ class CourseRepository extends BaseRepository
         $course = new Course(
             $row['name'],
             $row['code'],
-            $row['teacher_id'],
+            $row['instructor_id'],
             $row['start_date'],
             $row['end_date'],
             $row['description'],

@@ -98,11 +98,11 @@ class UserRepository extends BaseRepository
     }
 
     /**
-     * Get all teachers
+     * Get all instructors
      */
-    public function getAllTeachers()
+    public function getAllInstructors()
     {
-        return $this->getByRole('teacher');
+        return $this->getByRole('Instructor');
     }
 
     /**

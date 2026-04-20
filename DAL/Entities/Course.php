@@ -6,19 +6,19 @@ class Course
     private $name;
     private $code;
     private $description;
-    private $teacher_id;
+    private $instructor_id;
     private $capacity;
     private $start_date;
     private $end_date;
     private $CourseImageId;
     private $created_at;
 
-    public function __construct($name, $code, $teacher_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null)
+    public function __construct($name, $code, $instructor_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null)
     {
         $this->name = $name;
         $this->code = $code;
         $this->description = $description;
-        $this->teacher_id = $teacher_id;
+        $this->instructor_id = $instructor_id;
         $this->capacity = $capacity;
         $this->start_date = $start_date;
         $this->end_date = $end_date;
@@ -42,9 +42,9 @@ class Course
     {
         return $this->description;
     }
-    public function getTeacherId()
+    public function getInstructorId()
     {
-        return $this->teacher_id;
+        return $this->instructor_id;
     }
     public function getCapacity()
     {
@@ -84,9 +84,9 @@ class Course
     {
         $this->description = $description;
     }
-    public function setTeacherId($teacher_id)
+    public function setInstructorId($instructor_id)
     {
-        $this->teacher_id = $teacher_id;
+        $this->instructor_id = $instructor_id;
     }
     public function setCapacity($capacity)
     {
@@ -116,7 +116,7 @@ class Course
             'name' => $this->name,
             'code' => $this->code,
             'description' => $this->description,
-            'teacher_id' => $this->teacher_id,
+            'instructor_id' => $this->instructor_id,
             'capacity' => $this->capacity,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
