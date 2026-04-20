@@ -8,18 +8,18 @@ class CourseRequestDTO
     public $name;
     public $code;
     public $description;
-    public $teacher_id;
+    public $instructor_id;
     public $capacity;
     public $start_date;
     public $end_date;
     public $CourseImageId;
 
-    public function __construct($name, $code, $teacher_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null)
+    public function __construct($name, $code, $instructor_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null)
     {
         $this->name = $name;
         $this->code = $code;
         $this->description = $description;
-        $this->teacher_id = $teacher_id;
+        $this->instructor_id = $instructor_id;
         $this->capacity = $capacity;
         $this->start_date = $start_date;
         $this->end_date = $end_date;
@@ -31,7 +31,7 @@ class CourseRequestDTO
         return new self(
             $data['name'] ?? null,
             $data['code'] ?? null,
-            $data['teacher_id'] ?? null,
+            $data['instructor_id'] ?? null,
             $data['start_date'] ?? null,
             $data['end_date'] ?? null,
             $data['description'] ?? null,
@@ -50,8 +50,8 @@ class CourseResponseDTO
     public $name;
     public $code;
     public $description;
-    public $teacher_id;
-    public $teacher_name;
+    public $instructor_id;
+    public $instructor_name;
     public $capacity;
     public $enrolled_count;
     public $start_date;
@@ -59,14 +59,14 @@ class CourseResponseDTO
     public $CourseImageId;
     public $created_at;
 
-    public function __construct($id, $name, $code, $teacher_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null, $teacher_name = null, $enrolled_count = 0, $created_at = null)
+    public function __construct($id, $name, $code, $instructor_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null, $instructor_name = null, $enrolled_count = 0, $created_at = null)
     {
         $this->id = $id;
         $this->name = $name;
         $this->code = $code;
         $this->description = $description;
-        $this->teacher_id = $teacher_id;
-        $this->teacher_name = $teacher_name;
+        $this->instructor_id = $instructor_id;
+        $this->instructor_name = $instructor_name;
         $this->capacity = $capacity;
         $this->enrolled_count = $enrolled_count;
         $this->start_date = $start_date;
@@ -82,8 +82,8 @@ class CourseResponseDTO
             'name' => $this->name,
             'code' => $this->code,
             'description' => $this->description,
-            'teacher_id' => $this->teacher_id,
-            'teacher_name' => $this->teacher_name,
+            'instructor_id' => $this->instructor_id,
+            'instructor_name' => $this->instructor_name,
             'capacity' => $this->capacity,
             'enrolled_count' => $this->enrolled_count,
             'start_date' => $this->start_date,

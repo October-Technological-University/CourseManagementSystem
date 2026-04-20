@@ -61,7 +61,7 @@ class InitialCreate
             `password` VARCHAR(255) NOT NULL,
             `first_name` VARCHAR(100) NOT NULL,
             `last_name` VARCHAR(100) NOT NULL,
-            `role` ENUM('admin', 'teacher', 'student') NOT NULL,
+            `role` ENUM('admin', 'Instructor', 'student') NOT NULL,
             `profile_picture_id` INT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX `idx_email` (`email`),
@@ -84,16 +84,16 @@ class InitialCreate
             `name` VARCHAR(255) NOT NULL,
             `code` VARCHAR(50) UNIQUE NOT NULL,
             `description` TEXT NULL,
-            `teacher_id` INT NOT NULL,
+            `instructor_id` INT NOT NULL,
             `capacity` INT NOT NULL DEFAULT 30,
             `start_date` DATE NOT NULL,
             `end_date` DATE NOT NULL,
             `CourseImageId` INT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX `idx_code` (`code`),
-            INDEX `idx_teacher_id` (`teacher_id`),
+            INDEX `idx_instructor_id` (`instructor_id`),
             INDEX `idx_course_image_id` (`CourseImageId`),
-            CONSTRAINT `fk_courses_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+            CONSTRAINT `fk_courses_instructor` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
         if (!$this->conn->query($sql)) {
