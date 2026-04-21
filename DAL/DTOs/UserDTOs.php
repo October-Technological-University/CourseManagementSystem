@@ -47,8 +47,9 @@ class UserResponseDTO
     public $role;
     public $profile_picture_id;
     public $created_at;
+    public $profile_picture_url;
 
-    public function __construct($id, $email, $first_name, $last_name, $role, $profile_picture_id = null, $created_at = null)
+    public function __construct($id, $email, $first_name, $last_name, $role, $profile_picture_id = null, $created_at = null, $profile_picture_url = null)
     {
         $this->id = $id;
         $this->email = $email;
@@ -57,6 +58,7 @@ class UserResponseDTO
         $this->role = $role;
         $this->profile_picture_id = $profile_picture_id;
         $this->created_at = $created_at;
+        $this->profile_picture_url = $profile_picture_url;
     }
 
     public function toArray()
