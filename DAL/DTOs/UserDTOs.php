@@ -76,40 +76,6 @@ class UserResponseDTO
 }
 
 /**
- * DTO for remember me token response
- */
-class RememberTokenDTO
-{
-    public $selector;
-    public $validator;
-    public $expires_at;
-
-    public function __construct($selector, $validator, $expires_at)
-    {
-        $this->selector = $selector;
-        $this->validator = $validator;
-        $this->expires_at = $expires_at;
-    }
-
-    public function toArray()
-    {
-        return [
-            'selector' => $this->selector,
-            'validator' => $this->validator,
-            'expires_at' => $this->expires_at
-        ];
-    }
-
-    /**
-     * Generate a remember token cookie value (selector:validator)
-     */
-    public function getCookieValue()
-    {
-        return $this->selector . ':' . $this->validator;
-    }
-}
-
-/**
  * DTO for file attachment (profile picture or course file)
  */
 class FileAttachmentRequestDTO
