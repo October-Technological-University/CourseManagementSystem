@@ -3,7 +3,7 @@ define('BASE_PATH', __DIR__ . '/../../');
 
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
 require_once BASE_PATH . 'DAL/Database/InitialCreate.php';
-require_once BASE_PATH . '/DAL/Database/Database.php';
+require_once BASE_PATH . 'DAL/Database/Database.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
     require_once $filename;
@@ -27,9 +27,21 @@ $uri = preg_replace('#/CourseManagementSystem/PL/public/(index(\.php)?)?#', '', 
 $uri = trim($uri, '/');
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Create tables if they don't exist (idempotent - safe to run on every request)
-$initial = new InitialCreate();
-$initial->createTables();
+// Initialize database connection and create tables
+try {
+    // Ensure DBContext singleton is initialized
+    DBContext::getInstance();
+
+    // Create tables if they don't exist (idempotent - safe to run on every request)
+    $initial = new InitialCreate();
+    $initial->createTables();
+} catch (Exception $e) {
+    BaseController::error('Database initialization failed: ' . $e->getMessage(), 500);
+    exit;
+} catch (Error $e) {
+    BaseController::error('Database error: ' . $e->getMessage(), 500);
+    exit;
+}
 
 // ============================================================
 // ROUTER CONFIGURATION
