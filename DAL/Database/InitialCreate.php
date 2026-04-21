@@ -36,6 +36,9 @@ class InitialCreate
             // Create file_attachments table (depends on courses and users)
             $this->createFileAttachmentsTable();
 
+            // Create user_tokens table (depends on users)
+            $this->createUserTokensTable();
+
             // Add foreign key from users to file_attachments (profile picture)
             $this->addProfilePictureForeignKey();
 
@@ -188,6 +191,28 @@ class InitialCreate
     }
 
     /**
+     * Create user_tokens table for remember me functionality
+     */
+    private function createUserTokensTable()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS `user_tokens` (
+            `id` INT PRIMARY KEY AUTO_INCREMENT,
+            `user_id` INT NOT NULL,
+            `selector` CHAR(12) NOT NULL,
+            `token_hash` CHAR(64) NOT NULL,
+            `expires_at` DATETIME NOT NULL,
+            INDEX `idx_user_id` (`user_id`),
+            INDEX `idx_selector` (`selector`),
+            INDEX `idx_expires_at` (`expires_at`),
+            CONSTRAINT `fk_user_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+        if (!$this->conn->query($sql)) {
+            throw new Exception("Error creating user_tokens table: " . $this->conn->error);
+        }
+    }
+
+    /**
      * Add foreign key from courses.CourseImageId to file_attachments.id
      * This must be done after both tables are created
      */
@@ -221,7 +246,7 @@ class InitialCreate
     {
         try {
             // Drop in reverse order of dependencies
-            $tables = ['course_students', 'file_attachments', 'courses', 'users'];
+            $tables = ['user_tokens', 'course_students', 'file_attachments', 'courses', 'users'];
 
             foreach ($tables as $table) {
                 $this->conn->query("DROP TABLE IF NOT EXISTS `$table`");
