@@ -34,8 +34,8 @@ class EnrollmentMapper
     public function toDTO(CourseStudent $enrollment): EnrollmentResponseDTO
     {
         // Fetch joined data
-        $student = $this->userRepository->findById($enrollment->getStudentId());
-        $course = $this->courseRepository->findById($enrollment->getCourseId());
+        $student = $this->userRepository->getById($enrollment->getStudentId());
+        $course = $this->courseRepository->getById($enrollment->getCourseId());
 
         $studentName = $student ?
             $student->getFirstName() . ' ' . $student->getLastName() :
@@ -83,7 +83,7 @@ class EnrollmentMapper
         $courses = [];
 
         foreach ($enrollments as $enrollment) {
-            $course = $this->courseRepository->findById($enrollment->getCourseId());
+            $course = $this->courseRepository->getById($enrollment->getCourseId());
             if ($course) {
                 $courses[] = $courseMapper->toDTO($course);
             }
@@ -106,7 +106,7 @@ class EnrollmentMapper
         $students = [];
 
         foreach ($enrollments as $enrollment) {
-            $student = $this->userRepository->findById($enrollment->getStudentId());
+            $student = $this->userRepository->getById($enrollment->getStudentId());
             if ($student) {
                 $students[] = $userMapper->toDTO($student);
             }

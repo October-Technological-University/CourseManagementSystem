@@ -34,14 +34,14 @@ class FileAttachmentMapper
     public function toDTO(FileAttachment $file): FileAttachmentResponseDTO
     {
         // Fetch joined data
-        $uploader = $this->userRepository->findById($file->getUploadedBy());
+        $uploader = $this->userRepository->getById($file->getUploadedBy());
         $uploaderName = $uploader ?
             $uploader->getFirstName() . ' ' . $uploader->getLastName() :
             'Unknown User';
 
         $courseName = null;
         if ($file->getCourseId()) {
-            $course = $this->courseRepository->findById($file->getCourseId());
+            $course = $this->courseRepository->getById($file->getCourseId());
             $courseName = $course ? $course->getName() : 'Unknown Course';
         }
 
