@@ -1,12 +1,10 @@
 <?php
 require_once BASE_PATH . 'DAL/Repository/BaseRepository.php';
 require_once BASE_PATH . 'DAL/Entities/User.php';
-require_once BASE_PATH . 'DAL/Entities/UserToken.php';
 
 class UserRepository extends BaseRepository
 {
     protected $table = 'users';
-    protected $tokensTable = 'user_tokens';
 
     /**
      * Create a new user
@@ -221,124 +219,6 @@ class UserRepository extends BaseRepository
         $user->setCreatedAt($row['created_at']);
 
         return $user;
-    }
-
-    /**
-     * ============================
-     * USER TOKEN METHODS
-     * ============================
-     */
-
-    /**
-     * Create a new user token
-     */
-    public function createToken(UserToken $token)
-    {
-        $sql = "INSERT INTO `{$this->tokensTable}` (user_id, selector, token_hash, expires_at)
-                VALUES (?, ?, ?, ?)";
-
-        $stmt = $this->executePreparedStatement($sql, 'isss', [
-            $token->getUserId(),
-            $token->getSelector(),
-            $token->getTokenHash(),
-            $token->getExpiresAt()
-        ]);
-
-        $stmt->close();
-        return $this->getLastInsertId();
-    }
-
-    /**
-     * Get token by selector
-     */
-    public function getTokenBySelector($selector)
-    {
-        $sql = "SELECT * FROM `{$this->tokensTable}` WHERE selector = ?";
-        $stmt = $this->executePreparedStatement($sql, 's', [$selector]);
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $stmt->close();
-
-        if (!$row) {
-            return null;
-        }
-
-        return $this->mapRowToUserToken($row);
-    }
-
-    /**
-     * Get all tokens for a user
-     */
-    public function getTokensByUserId($user_id)
-    {
-        $sql = "SELECT * FROM `{$this->tokensTable}` WHERE user_id = ? ORDER BY expires_at DESC";
-        $stmt = $this->executePreparedStatement($sql, 'i', [$user_id]);
-        $result = $stmt->get_result();
-        $tokens = [];
-
-        while ($row = $result->fetch_assoc()) {
-            $tokens[] = $this->mapRowToUserToken($row);
-        }
-
-        $stmt->close();
-        return $tokens;
-    }
-
-    /**
-     * Delete a token by ID
-     */
-    public function deleteToken($id)
-    {
-        $sql = "DELETE FROM `{$this->tokensTable}` WHERE id = ?";
-        $stmt = $this->executePreparedStatement($sql, 'i', [$id]);
-        $stmt->close();
-        return $this->getAffectedRows();
-    }
-
-    /**
-     * Delete all tokens for a user
-     */
-    public function deleteTokensByUserId($user_id)
-    {
-        $sql = "DELETE FROM `{$this->tokensTable}` WHERE user_id = ?";
-        $stmt = $this->executePreparedStatement($sql, 'i', [$user_id]);
-        $stmt->close();
-        return $this->getAffectedRows();
-    }
-
-    /**
-     * Delete token by selector
-     */
-    public function deleteTokenBySelector($selector)
-    {
-        $sql = "DELETE FROM `{$this->tokensTable}` WHERE selector = ?";
-        $stmt = $this->executePreparedStatement($sql, 's', [$selector]);
-        $stmt->close();
-        return $this->getAffectedRows();
-    }
-
-    /**
-     * Delete all expired tokens
-     */
-    public function deleteExpiredTokens()
-    {
-        $sql = "DELETE FROM `{$this->tokensTable}` WHERE expires_at < NOW()";
-        $result = $this->executeQuery($sql);
-        return $this->conn->affected_rows;
-    }
-
-    /**
-     * Map database row to UserToken entity
-     */
-    private function mapRowToUserToken($row)
-    {
-        return new UserToken(
-            $row['user_id'],
-            $row['selector'],
-            $row['token_hash'],
-            $row['expires_at'],
-            $row['id']
-        );
     }
 }
 ?>
