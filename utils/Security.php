@@ -45,4 +45,20 @@ class Security
         }
         return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }
+
+    public static function unsetTokenFromCookies()
+    {
+
+        if (isset($_COOKIE['remember_me'])) {
+            setcookie('remember_me', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
+            
+            unset($_COOKIE['remember_me']);
+        }
+    }
 }

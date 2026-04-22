@@ -5,6 +5,7 @@ require_once BASE_PATH . 'DAL/Database/DBContext.php';
 require_once BASE_PATH . 'DAL/Database/InitialCreate.php';
 require_once BASE_PATH . 'DAL/Database/Database.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
+require_once __DIR__ . '/../Controllers/AuthController.php';
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
     require_once $filename;
 }
@@ -57,6 +58,9 @@ $router = [
         'api/testdatabase' => fn() => BaseController::success(['message' => 'DBContext connection active']),
     ],
     'POST' => [
+        'api/auth/register' => fn() => (new AuthController())->register(),
+        'api/auth/login' => fn() => (new AuthController())->login(),
+        'api/auth/logout' => fn() => (new AuthController())->logout(),
         // Example: 'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())
     ],
     'PUT' => [
@@ -85,6 +89,8 @@ $router = [
 // 3. For routes with parameters (like /api/users/5):
 //    Use pattern matching and extract ID from URI
 //
+// NOTE: Controller methods should call exit() after sending response
+// to prevent further execution
 // ============================================================
 
 // Route matching
