@@ -25,8 +25,9 @@ class FileAttachmentRepository extends BaseRepository
             $file->getUploadedBy()
         ]);
 
+        $lastInsertId = $this->getLastInsertId();
         $stmt->close();
-        return $this->getLastInsertId();
+        return $lastInsertId;
     }
 
     /**
@@ -209,8 +210,9 @@ class FileAttachmentRepository extends BaseRepository
             $file->getId()
         ]);
 
+        $effectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $effectedRows;
     }
 
     /**
@@ -220,8 +222,9 @@ class FileAttachmentRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'i', [$id]);
+        $effectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $effectedRows;
     }
 
     /**
@@ -231,8 +234,9 @@ class FileAttachmentRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE stored_name = ?";
         $stmt = $this->executePreparedStatement($sql, 's', [$stored_name]);
+        $effectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $effectedRows;
     }
 
     /**
