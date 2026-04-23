@@ -105,7 +105,6 @@ $routePatterns = [
         'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
         'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
         'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
-        'api/files/serve/{storedName}' => fn($storedName) => (new FileAttachmentController())->serve($storedName),
     ],
     'POST' => [
         'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
@@ -140,16 +139,19 @@ $routePatterns = [
 // Route matching with parameter support
 $matched = false;
 if (isset($router[$method])) {
-    foreach (array_merge($router[$method], $routePatterns[$method] ?? []) as $routePattern => $callback) {
+    foreach ($router[$method] as $routePattern => $callback) {
         $params = [];
         if (matchRoute($routePattern, $uri, $params)) {
             call_user_func_array($callback, $params);
-            exit;
+            $matched = true;
+            break;
         }
     }
 }
 
-BaseController::error('Route not found', 404);
+if (!$matched) {
+    BaseController::error('Route not found', 404);
+}
 
 /**
  * Match route pattern with URI and extract parameters
@@ -171,4 +173,45 @@ function matchRoute($pattern, $uri, &$params)
     }
     return false;
 }
+// Route matching
+if (isset($router[$method][$uri])) {
+    $router[$method][$uri]();
+    exit;
+}
+
+// Support simple variable segments like {id} in native PHP routing
+foreach ($routePatterns[$method] ?? [] as $routePattern => $handler) {
+    $patternSegments = explode('/', trim($routePattern, '/'));
+    $uriSegments = explode('/', trim($uri, '/'));
+
+    if (count($patternSegments) !== count($uriSegments)) {
+        continue;
+    }
+
+    $params = [];
+    $matched = true;
+    foreach ($patternSegments as $index => $segment) {
+        if (preg_match('/^\{(.+)\}$/', $segment, $matches)) {
+            $paramName = $matches[1];
+            if ($paramName === 'id' && !ctype_digit($uriSegments[$index])) {
+                $matched = false;
+                break;
+            }
+            $params[] = $uriSegments[$index];
+            continue;
+        }
+
+        if ($segment !== $uriSegments[$index]) {
+            $matched = false;
+            break;
+        }
+    }
+
+    if ($matched) {
+        $handler(...$params);
+        exit;
+    }
+}
+
+BaseController::error('Route not found', 404);
 

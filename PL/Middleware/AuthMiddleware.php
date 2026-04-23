@@ -24,13 +24,21 @@ class AuthMiddleware
             return self::$authenticatedUser;
         }
 
-        $decodedData = Security::decryptToken($_COOKIE['remember_me']);
-        $userId = null;
-        if ($decodedData && isset($decodedData['id'])) {
-            // Restore session from cookie data
-            $userId = $decodedData['id'];
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['user_role'] = $decodedData['role'] ?? null;
+        self::startSession();
+
+        // 1. Try Session first
+        $userId = $_SESSION['user_id'] ?? null;
+
+        // 2. If no session, try the Remember Me Cookie
+        if (!$userId && isset($_COOKIE['remember_me'])) {
+            $decodedData = Security::decryptToken($_COOKIE['remember_me']);
+            
+            if ($decodedData && isset($decodedData['id'])) {
+                // Restore session from cookie data
+                $userId = $decodedData['id'];
+                $_SESSION['user_id'] = $userId;
+                $_SESSION['user_role'] = $decodedData['role'] ?? null;
+            }
         }
 
         if (!$userId) {

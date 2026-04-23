@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../Mappers/FileAttachmentMapper.php';
-require_once __DIR__ . '/../../DAL/DTOs/FileDTOs.php';
 require_once __DIR__ . '/../../DAL/Repository/FileAttachmentRepository.php';
 require_once __DIR__ . '/../../DAL/Repository/UserRepository.php';
 require_once __DIR__ . '/../../DAL/Repository/CourseRepository.php';

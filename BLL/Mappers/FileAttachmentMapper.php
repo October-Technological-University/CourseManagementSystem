@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../../utils/FileStorageHelper.php';
 
 /**
  * FileAttachmentMapper
@@ -27,27 +26,38 @@ class FileAttachmentMapper
     /**
      * Convert FileAttachment entity to FileAttachmentResponseDTO
      * 
+     * Includes joined data: uploader_name and course_name
+     * 
      * @param FileAttachment $file The file attachment entity from database
-     * @return FileAttachmentResponseDTO The response DTO
+     * @return FileAttachmentResponseDTO The response DTO with joined data
      */
     public function toDTO(FileAttachment $file): FileAttachmentResponseDTO
     {
-        $fileUrl = FileStorageHelper::getFileUrl(
-            $file->getStoredName(),
-            $file->getCourseId(),
-            $file->getSubtype()
-        );
+        // Fetch joined data
+        $uploader = $this->userRepository->getById($file->getUploadedBy());
+        $uploaderName = $uploader ?
+            $uploader->getFirstName() . ' ' . $uploader->getLastName() :
+            'Unknown User';
+
+        $courseName = null;
+        if ($file->getCourseId()) {
+            $course = $this->courseRepository->getById($file->getCourseId());
+            $courseName = $course ? $course->getName() : 'Unknown Course';
+        }
 
         return new FileAttachmentResponseDTO(
             $file->getId(),
             $file->getFilename(),
             $file->getStoredName(),
+            $file->getFilePath(),
             $file->getMimeType(),
             $file->getFileSize(),
             $file->getUploadedBy(),
+            $file->getUploadedAt(),
             $file->getCourseId(),
             $file->getSubtype(),
-            $fileUrl
+            $uploaderName,
+            $courseName
         );
     }
 

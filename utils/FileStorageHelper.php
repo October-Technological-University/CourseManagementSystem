@@ -102,24 +102,6 @@ class FileStorageHelper
     }
 
     /**
-     * Generate file access URL for API responses
-     * 
-     * @param string $storedName The stored filename
-     * @param int|null $courseId Course ID (if file is course-related)
-     * @param string|null $subtype File subtype (if course file)
-     * @return string The file access URL
-     */
-    public static function getFileUrl($storedName, $courseId = null, $subtype = null)
-    {
-        // If courseId is set, it's a course file; otherwise it's a profile picture
-        if ($courseId !== null) {
-            return "/api/files/serve/{$storedName}?type=course&course_id={$courseId}&subtype={$subtype}";
-        } else {
-            return "/api/files/serve/{$storedName}?type=profile";
-        }
-    }
-
-    /**
      * Check if file exists
      */
     public static function exists($filepath)
