@@ -132,8 +132,9 @@ class UserRepository extends BaseRepository
             $user->getId()
         ]);
 
+        $effectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $effectedRows;
     }
 
     /**

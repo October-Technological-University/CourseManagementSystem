@@ -20,8 +20,9 @@ class CourseStudentRepository extends BaseRepository
             $status
         ]);
 
+        $lastInsertId = $this->getLastInsertId();
         $stmt->close();
-        return $this->getLastInsertId();
+        return $lastInsertId;
     }
 
     /**
@@ -164,8 +165,9 @@ class CourseStudentRepository extends BaseRepository
     {
         $sql = "UPDATE `{$this->table}` SET status = ? WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'si', [$status, $id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -175,8 +177,9 @@ class CourseStudentRepository extends BaseRepository
     {
         $sql = "UPDATE `{$this->table}` SET status = ? WHERE course_id = ? AND student_id = ?";
         $stmt = $this->executePreparedStatement($sql, 'sii', [$status, $course_id, $student_id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -186,8 +189,9 @@ class CourseStudentRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'i', [$id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -197,8 +201,9 @@ class CourseStudentRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE course_id = ? AND student_id = ?";
         $stmt = $this->executePreparedStatement($sql, 'ii', [$course_id, $student_id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
