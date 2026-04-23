@@ -123,8 +123,30 @@ class FileAttachmentController extends BaseController
 
             $fileDTO = $result['data'];
 
-            // Permission check: uploader or admin
-            if ($fileDTO->uploaded_by !== $userId && $user->getRole() !== 'admin') {
+            // Permission check
+            $role = strtolower($user->getRole());
+
+            if ($role === 'admin') {
+                // Admins can download anything
+            } elseif ($fileDTO->uploaded_by === $userId) {
+                // Uploaders can always download their own files
+            } elseif ($fileDTO->course_id !== null) {
+                // Course file: allow the course instructor and enrolled students
+                require_once __DIR__ . '/../../DAL/Repository/CourseRepository.php';
+                require_once __DIR__ . '/../../DAL/Repository/CourseStudentRepository.php';
+
+                $courseRepo     = new CourseRepository();
+                $enrollmentRepo = new CourseStudentRepository();
+                $course         = $courseRepo->getById($fileDTO->course_id);
+
+                $isInstructor = $course && $course->getInstructorId() === $userId;
+                $isEnrolled   = $enrollmentRepo->isEnrolled($fileDTO->course_id, $userId);
+
+                if (!$isInstructor && !$isEnrolled) {
+                    $this->error('Forbidden. You are not enrolled in this course.', 403);
+                    return;
+                }
+            } else {
                 $this->error('Forbidden', 403);
                 return;
             }

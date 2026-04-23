@@ -11,6 +11,8 @@ require_once __DIR__ . '/../Controllers/BaseController.php';
 require_once __DIR__ . '/../Controllers/AuthController.php';
 require_once __DIR__ . '/../Controllers/FileAttachmentController.php';
 require_once __DIR__ . '/../Controllers/UserController.php';
+require_once __DIR__ . '/../Controllers/CourseController.php';
+require_once __DIR__ . '/../Controllers/EnrollmentController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
@@ -68,13 +70,18 @@ $router = [
         },
         'api/testdatabase' => fn() => BaseController::success(['message' => 'DBContext connection active']),
         'api/files/download/{id}' => fn($id) => (new FileAttachmentController())->download($id),
-        'api/files/course/{courseId}' => fn($courseId) => (new FileAttachmentController())->getCourseFiles($courseId),
         'api/files/course/{courseId}/assignments' => fn($courseId) => (new FileAttachmentController())->getCourseAssignments($courseId),
         'api/files/course/{courseId}/resources' => fn($courseId) => (new FileAttachmentController())->getCourseResources($courseId),
+        'api/files/course/{courseId}' => fn($courseId) => (new FileAttachmentController())->getCourseFiles($courseId),
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->getById($id),
         'api/users' => fn() => (new UserController())->index(),
         'api/users/students' => fn() => (new UserController())->listStudents(),
         'api/users/instructors' => fn() => (new UserController())->listInstructors(),
+        'api/courses' => fn() => (new CourseController())->index(),
+        'api/courses/instructor/{instructorId}' => fn($id) => (new CourseController())->getByInstructor((int)$id),
+        'api/courses/{id}' => fn($id) => (new CourseController())->show((int)$id),
+        'api/enrollments/course/{courseId}/students' => fn($id) => (new EnrollmentController())->getStudentsByCourse((int)$id),
+        'api/enrollments/student/{studentId}/courses' => fn($id) => (new EnrollmentController())->getCoursesByStudent((int)$id),
     ],
     'POST' => [
         'api/auth/register' => fn() => (new AuthController())->register(),
@@ -89,14 +96,16 @@ $router = [
         },
         'api/files/upload/course' => fn() => (new FileAttachmentController())->uploadCourseFile(),
         'api/files/upload/profile' => fn() => (new FileAttachmentController())->uploadProfilePicture(),
-        // Example: 'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())
+        'api/courses' => fn() => (new CourseController())->create(),
+        'api/enrollments' => fn() => (new EnrollmentController())->enroll(),
     ],
     'PUT' => [
-        // Example: 'api/users/{id}' => fn($id) => (new UserController())->update($id, BaseController::getJsonInput())
+        'api/courses/{id}' => fn($id) => (new CourseController())->update((int)$id),
     ],
     'DELETE' => [
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),
-        // Example: 'api/users/{id}' => fn($id) => (new UserController())->delete($id)
+        'api/courses/{id}' => fn($id) => (new CourseController())->delete((int)$id),
+        'api/enrollments/drop' => fn() => (new EnrollmentController())->drop(),
     ]
 ];
 
@@ -149,23 +158,53 @@ if (isset($router[$method])) {
     }
 }
 
-BaseController::error('Route not found', 404);
+// Fallback: match against $routePatterns (segment-based matching)
+if (!$matched) {
+    foreach ($routePatterns[$method] ?? [] as $routePattern => $handler) {
+        $patternSegments = explode('/', trim($routePattern, '/'));
+        $uriSegments = explode('/', trim($uri, '/'));
 
-/**
- * Match route pattern with URI and extract parameters
- * @param string $pattern Route pattern with {param} placeholders
- * @param string $uri Actual URI
- * @param array &$params Reference to array that will hold extracted parameters
- * @return bool True if pattern matches
- */
+        if (count($patternSegments) !== count($uriSegments)) {
+            continue;
+        }
+
+        $params = [];
+        $segmentMatched = true;
+        foreach ($patternSegments as $index => $segment) {
+            if (preg_match('/^\{(.+)\}$/', $segment, $matches)) {
+                $paramName = $matches[1];
+                if ($paramName === 'id' && !ctype_digit($uriSegments[$index])) {
+                    $segmentMatched = false;
+                    break;
+                }
+                $params[] = $uriSegments[$index];
+                continue;
+            }
+
+            if ($segment !== $uriSegments[$index]) {
+                $segmentMatched = false;
+                break;
+            }
+        }
+
+        if ($segmentMatched) {
+            $handler(...$params);
+            $matched = true;
+            break;
+        }
+    }
+}
+
+if (!$matched) {
+    BaseController::error('Route not found', 404);
+}
+
 function matchRoute($pattern, $uri, &$params)
 {
-    // Convert pattern to regex
     $regex = preg_replace('/\{([^}]+)\}/', '([^/]+)', $pattern);
     $regex = '#^' . $regex . '$#';
 
     if (preg_match($regex, $uri, $matches)) {
-        // Extract parameters (skip full match at index 0)
         $params = array_slice($matches, 1);
         return true;
     }
