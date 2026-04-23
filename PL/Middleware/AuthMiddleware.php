@@ -24,7 +24,12 @@ class AuthMiddleware
             return self::$authenticatedUser;
         }
 
-        $decodedData = Security::decryptToken($_COOKIE['remember_me']);
+        $token = $_COOKIE['remember_me'] ?? null;
+        if (!$token) {
+            return null;
+        }
+
+        $decodedData = Security::decryptToken($token);
         $userId = null;
         if ($decodedData && isset($decodedData['id'])) {
             // Restore session from cookie data

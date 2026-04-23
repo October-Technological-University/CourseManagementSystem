@@ -35,12 +35,20 @@ class AuthService
             return ['success' => false, 'errors' => ['Email already in use']];
         }
 
+        if ($data['role'] ?? null) {
+            $validRoles = ['student', 'instructor', 'admin'];
+            if (!in_array($data['role'], $validRoles)) {
+                return ['success' => false, 'errors' => ['Invalid role specified']];
+            }
+        }
+
         // Create user entity and save to database
         $userEntity = $this->userMapper->toEntity(new UserRequestDTO(
             $data['email'],
             Security::hashPassword($data['password']),
             $data['first_name'],
-            $data['last_name']
+            $data['last_name'],
+            $role = $data['role'] ?? 'student'
         ));
         $isCreated = $this->userRepository->create($userEntity);
         $createdUser = $this->userMapper->toDTO($this->userRepository->getById($isCreated)); // To get the created user with its ID and othe sql side generated fields
@@ -50,31 +58,6 @@ class AuthService
             'success' => true,
             'user' => $createdUser
         ];
-    }
-
-    public function delete(array $data): array
-    {
-        // Validate required fields
-        if (!$this->validator->validateRequired($data, ['email'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Validate email format
-        if (!$this->validator->validateEmail($data['email'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Check if user exists
-        $user = $this->userRepository->getByEmail($data['email']);
-        if (!$user) {
-            return ['success' => false, 'errors' => ['User not found']];
-        }
-
-        // Delete user from database
-        $this->userRepository->delete($user);
-
-        // Return success response
-        return ['success' => true];
     }
 
     public function login(array $data): array

@@ -99,4 +99,22 @@ class UserController
         AuthMiddleware::requireAuth();
         $this->respond($this->userService->removeProfilePicture($userId));
     }
+
+    public function deleteAccount($data){
+        $user = AuthMiddleware::requireAuth();
+
+        if ($user->getId() !== $data['id'] && !AuthMiddleware::requireRole('admin')) {
+            BaseController::error('Forbidden. You can only delete your own account.', 403);
+            return;
+        }
+
+        $result = $this->userService->delete($data['id']);
+        if ($result['success']) {
+            BaseController::success(null, 'Account deleted successfully');
+        } else {
+            $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'Failed to delete account');
+            BaseController::error($error, 400);
+        }
+    }
 }
+

@@ -84,6 +84,26 @@ class CourseController extends BaseController
         self::error(implode(', ', $result['errors']), 400);
     }
 
+    public function generateCode($id){
+        $user = AuthMiddleware::requireRole('instructor');
+
+        $course = $this->courseService->getById($id);
+        if (!$course['success']) {
+            self::error('Course not found', 404);
+            return;
+        }
+        if ($course['data']->instructor_id !== $user->getId()) {
+            self::error('Forbidden. You can only generate invite codes for your own courses.', 403);
+            return;
+        }
+        $result = $this->courseService->generateCourseInviteCode($id);
+        if ($result['success']) {
+            self::success($result['data'], 'Course invite code generated successfully');
+            return;
+        }
+        self::error(implode(', ', $result['errors']), 400);
+    }
+
     /**
      * PUT /api/courses/{id}
      * Protected: admin or the course's own instructor.

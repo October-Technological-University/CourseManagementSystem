@@ -88,36 +88,28 @@ class UserService
 
     public function update(array $data): array
     {
-        // Validate required fields
         if (!$this->validator->validateRequired($data, ['email', 'first_name', 'last_name'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
-        // Validate email format
         if (!$this->validator->validateEmail($data['email'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
-        // Check if user exists
         $user = $this->userRepo->getByEmail($data['email']);
         if (!$user) {
             return ['success' => false, 'errors' => ['User not found']];
         }
 
-        if (strtoupper($user->getEmail()) == strtoupper($data['email'])) {
-            return ['success' => false, 'errors' => ['This email is already associated with your account.']];
-        }
-
-        // Update user entity and save to database
-        $userEntity = $this->mapper->toEntity(new UserRequestDTO(
+        $this->mapper->updateEntity($user, new UserRequestDTO(
             $data['email'],
-            null, // Password is not updated here
+            null,
             $data['first_name'],
             $data['last_name']
         ));
-        $isUpdated = $this->userRepo->update($userEntity);
-        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($isUpdated));
-        // Return success response with updated user data (excluding sensitive info)
+        $this->userRepo->update($user);
+        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($user->getId()));
+
         return [
             'success' => true,
             'user' => $updatedUser

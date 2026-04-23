@@ -97,7 +97,9 @@ $router = [
         'api/files/upload/course' => fn() => (new FileAttachmentController())->uploadCourseFile(),
         'api/files/upload/profile' => fn() => (new FileAttachmentController())->uploadProfilePicture(),
         'api/courses' => fn() => (new CourseController())->create(),
+        'api/courses/{id}/generate-code' => fn($id) => (new CourseController())->generateCode((int)$id),
         'api/enrollments' => fn() => (new EnrollmentController())->enroll(),
+        'api/enrollments/code' => fn() => (new EnrollmentController())->enrollByCode(),
     ],
     'PUT' => [
         'api/courses/{id}' => fn($id) => (new CourseController())->update((int)$id),

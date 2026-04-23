@@ -22,7 +22,15 @@ class EnrollmentService
             new CourseRepository()
         );
     }
+    public function enrollByCode(string $courseCode, int $studentId): array
+    {
+        $course = $this->courseRepo->getByCode($courseCode);
+        if (!$course) {
+            return ['success' => false, 'errors' => ['Course not found']];
+        }
 
+        return $this->enroll($course->getId(), $studentId);
+    }
     public function enroll(int $courseId, int $studentId): array
     {
         $course = $this->courseRepo->getById($courseId);

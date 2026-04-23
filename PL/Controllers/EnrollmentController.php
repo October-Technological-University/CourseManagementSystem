@@ -55,6 +55,31 @@ class EnrollmentController extends BaseController
     }
 
     /**
+     * POST /api/enrollments/code
+     * Body: { "course_code": "ABC123" }
+     * Students enroll themselves using a course invite code.
+     */
+    public function enrollByCode()
+    {
+        $user = AuthMiddleware::requireRole('student');
+        $data = self::getJsonInput();
+
+        if (!isset($data['course_code']) || trim($data['course_code']) === '') {
+            self::error('course_code is required', 400);
+            return;
+        }
+
+        $result = $this->enrollmentService->enrollByCode(trim($data['course_code']), $user->getId());
+
+        if ($result['success']) {
+            self::success($result['data']->toArray(), 'Enrolled successfully', 201);
+            return;
+        }
+
+        self::error(implode(', ', $result['errors']), 400);
+    }
+
+    /**
      * DELETE /api/enrollments/drop
      * Body: { "course_id": 1, "student_id": 5 }
      * Students drop themselves; admins can drop any student.

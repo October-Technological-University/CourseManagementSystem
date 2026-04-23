@@ -25,20 +25,18 @@ class CourseService
 
     public function create(array $data): array
     {
-        if (!$this->validator->validateRequired($data, ['name', 'code', 'instructor_id', 'start_date', 'end_date'])) {
+        if (!$this->validator->validateRequired($data, ['name', 'instructor_id', 'start_date', 'end_date'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
         if (!$this->validator->validateDate($data['start_date']) || !$this->validator->validateDate($data['end_date'])) {
             return ['success' => false, 'errors' => ['Invalid date format. Use Y-m-d.']];
         }
-
+        if (empty($data['code'])) {
+            $data['code'] = null; 
+        }
         if (strtotime($data['end_date']) <= strtotime($data['start_date'])) {
             return ['success' => false, 'errors' => ['end_date must be after start_date']];
-        }
-
-        if ($this->courseRepo->getByCode($data['code'])) {
-            return ['success' => false, 'errors' => ['Course code already exists']];
         }
 
         $instructor = $this->userRepo->getById($data['instructor_id']);
@@ -63,7 +61,24 @@ class CourseService
             'data'    => $this->mapper->toDTO($course, $enrolled, $instructorName),
         ];
     }
-
+    public function generateCourseInviteCode($id){
+        $course = $this->courseRepo->getById($id);
+        if (!$course) {
+            return ['success' => false, 'errors' => ['Course not found']];
+        }
+        // Generate a unique 8-character alphanumeric code
+        $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+        while ($this->courseRepo->getByCode($code) !== null) {
+            // If the generated code already exists, generate a new one
+            $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+        }
+        $course->setCode($code);
+        $isUpdate = ($this->courseRepo->update($course)) > 0 ? true : false;
+        if (!$isUpdate) {
+            return ['success' => false, 'errors' => ['Failed to generate invite code']];
+        }
+        return ['success' => true, 'data' => $course->getCode()];
+    }
     public function getById(int $id): array
     {
         $course = $this->courseRepo->getById($id);
@@ -162,7 +177,7 @@ class CourseService
             $kw = strtolower($filters['keyword']);
             $courses = array_filter($courses, function ($c) use ($kw) {
                 return str_contains(strtolower($c->getName()), $kw)
-                    || str_contains(strtolower($c->getCode()), $kw);
+                    || str_contains(strtolower($c->getCode() ?? ''), $kw);
             });
         }
 
