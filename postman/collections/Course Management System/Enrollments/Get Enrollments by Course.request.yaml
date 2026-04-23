@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Enrollments by Course
+method: GET
+url: '{{baseUrl}}/api/enrollments/course/{{courseId}}/students'
+order: 3000

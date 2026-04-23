@@ -1,0 +1,13 @@
+$kind: http-request
+name: Serve File
+method: GET
+url: '{{baseUrl}}/api/files/serve/{{storedName}}'
+order: 6000
+queryParams:
+  - key: type
+    value: profile
+    description: 'profile or course'
+  - key: course_id
+    value: ''
+    description: 'Required if type is course'
+    disabled: true

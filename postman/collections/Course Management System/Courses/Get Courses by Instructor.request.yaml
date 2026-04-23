@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Courses by Instructor
+method: GET
+url: '{{baseUrl}}/api/courses/instructor/{{instructorId}}'
+order: 3000
