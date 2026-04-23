@@ -141,10 +141,17 @@ class UserRepository extends BaseRepository
      */
     public function updateProfilePicture($user_id, $picture_id)
     {
-        $sql = "UPDATE `{$this->table}` SET profile_picture_id = ? WHERE id = ?";
-        $stmt = $this->executePreparedStatement($sql, 'ii', [$picture_id, $user_id]);
+        if ($picture_id === null) {
+            $sql = "UPDATE `{$this->table}` SET profile_picture_id = NULL WHERE id = ?";
+            $stmt = $this->executePreparedStatement($sql, 'i', [$user_id]);
+        } else {
+            $sql = "UPDATE `{$this->table}` SET profile_picture_id = ? WHERE id = ?";
+            $stmt = $this->executePreparedStatement($sql, 'ii', [$picture_id, $user_id]);
+        }
+
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**

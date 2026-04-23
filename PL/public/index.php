@@ -9,6 +9,7 @@ require_once BASE_PATH . 'DAL/Database/Database.php';
 
 require_once __DIR__ . '/../Controllers/BaseController.php';
 require_once __DIR__ . '/../Controllers/AuthController.php';
+require_once __DIR__ . '/../Controllers/UserController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
@@ -65,6 +66,9 @@ $router = [
             BaseController::success(['message' => 'Test route works!', 'timestamp' => time()]);
         },
         'api/testdatabase' => fn() => BaseController::success(['message' => 'DBContext connection active']),
+        'api/users' => fn() => (new UserController())->index(),
+        'api/users/students' => fn() => (new UserController())->listStudents(),
+        'api/users/instructors' => fn() => (new UserController())->listInstructors(),
     ],
     'POST' => [
         'api/auth/register' => fn() => (new AuthController())->register(),
@@ -84,6 +88,20 @@ $router = [
     ],
     'DELETE' => [
         // Example: 'api/users/{id}' => fn($id) => (new UserController())->delete($id)
+    ]
+];
+
+$routePatterns = [
+    'GET' => [
+        'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
+        'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
+        'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
+    ],
+    'POST' => [
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
+    ],
+    'DELETE' => [
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->removeProfilePicture((int)$id),
     ]
 ];
 
@@ -112,10 +130,42 @@ $router = [
 // Route matching
 if (isset($router[$method][$uri])) {
     $router[$method][$uri]();
-} else {
-    // For debugging later.
-    // echo '<br>' . $method . $uri . ' not found <br> <br>';
-
-    BaseController::error('Route not found', 404);
+    exit;
 }
+
+// Support simple variable segments like {id} in native PHP routing
+foreach ($routePatterns[$method] ?? [] as $routePattern => $handler) {
+    $patternSegments = explode('/', trim($routePattern, '/'));
+    $uriSegments = explode('/', trim($uri, '/'));
+
+    if (count($patternSegments) !== count($uriSegments)) {
+        continue;
+    }
+
+    $params = [];
+    $matched = true;
+    foreach ($patternSegments as $index => $segment) {
+        if (preg_match('/^\{(.+)\}$/', $segment, $matches)) {
+            $paramName = $matches[1];
+            if ($paramName === 'id' && !ctype_digit($uriSegments[$index])) {
+                $matched = false;
+                break;
+            }
+            $params[] = $uriSegments[$index];
+            continue;
+        }
+
+        if ($segment !== $uriSegments[$index]) {
+            $matched = false;
+            break;
+        }
+    }
+
+    if ($matched) {
+        $handler(...$params);
+        exit;
+    }
+}
+
+BaseController::error('Route not found', 404);
 
