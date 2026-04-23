@@ -349,4 +349,76 @@ class FileAttachmentController extends BaseController
             $this->error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * GET /api/files/serve/{storedName}
+     * Serve a file by stored name (public endpoint)
+     */
+    public function serve($storedName)
+    {
+        try {
+            // Get query parameters
+            $type = $_GET['type'] ?? 'profile';
+            $courseId = $_GET['course_id'] ?? null;
+            $subtype = $_GET['subtype'] ?? null;
+
+            // Sanitize stored name to prevent path traversal
+            if (preg_match('/[^a-zA-Z0-9._-]/', $storedName)) {
+                header("HTTP/1.0 400 Bad Request");
+                echo json_encode(['error' => 'Invalid file name']);
+                return;
+            }
+
+            // Determine file path based on type
+            if ($type === 'course' && $courseId) {
+                $filePath = FileStorageHelper::getStoragePath('course', $courseId) . $storedName;
+            } else {
+                // For profile pictures, we need to determine the user ID from the stored name or query
+                // Since profile pictures are stored in /uploads/profiles/{userId}/
+                // We can try multiple user IDs or extract from path
+                // For now, we'll scan common profile directory
+                $filePath = BASE_PATH . 'PL/public/uploads/profiles/*/' . $storedName;
+                $matches = glob($filePath);
+                if (empty($matches)) {
+                    header("HTTP/1.0 404 Not Found");
+                    echo json_encode(['error' => 'File not found']);
+                    return;
+                }
+                $filePath = $matches[0];
+            }
+
+            // Check if file exists
+            if (!file_exists($filePath)) {
+                header("HTTP/1.0 404 Not Found");
+                echo json_encode(['error' => 'File not found']);
+                return;
+            }
+
+            // Get MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $filePath);
+            finfo_close($finfo);
+            if (!$mimeType) {
+                $mimeType = 'application/octet-stream';
+            }
+
+            // Set headers for inline display (images will show in browser, others may trigger download)
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: public, max-age=3600');
+
+            // For images, use inline display; for other files, use attachment
+            if (strpos($mimeType, 'image') === 0) {
+                header('Content-Disposition: inline; filename="' . basename($storedName) . '"');
+            } else {
+                header('Content-Disposition: attachment; filename="' . basename($storedName) . '"');
+            }
+
+            readfile($filePath);
+            exit;
+        } catch (Exception $e) {
+            header("HTTP/1.0 500 Internal Server Error");
+            echo json_encode(['error' => 'An error occurred: ' . $e->getMessage()]);
+        }
+    }
 }
