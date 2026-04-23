@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../DAL/Repositories/CourseRepository.php';
+require_once __DIR__ . '/../../DAL/Repository/CourseRepository.php';
 require_once __DIR__ . '/../../DAL/DTOs/CourseDTOs.php';
 require_once __DIR__ . '/../../BLL/Mappers/CourseMapper.php';
 class CourseService 
