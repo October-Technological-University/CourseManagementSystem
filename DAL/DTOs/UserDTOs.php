@@ -119,69 +119,42 @@ class FileAttachmentRequestDTO
 /**
  * DTO for file attachment response
  */
-class FileAttachmentResponseDTO
-{
-    public $id;
-    public $filename;
-    public $stored_name;
-    public $file_path;
-    public $mime_type;
-    public $file_size;
-    public $course_id;
-    public $subtype;
-    public $uploaded_by;
-    public $uploaded_at;
-    public $uploader_name;
-    public $course_name;
+// class FileAttachmentResponseDTO
+// {
+//     public $id;
+//     public $stored_name;
+//     public $mime_type;
+//     public $file_size;
+//     public $course_id;
+//     public $subtype;
+//     public $file_url; // URL to access the file via server
 
-    public function __construct($id, $filename, $stored_name, $file_path, $mime_type, $file_size, $uploaded_by, $uploaded_at, $course_id = null, $subtype = null, $uploader_name = null, $course_name = null)
-    {
-        $this->id = $id;
-        $this->filename = $filename;
-        $this->stored_name = $stored_name;
-        $this->file_path = $file_path;
-        $this->mime_type = $mime_type;
-        $this->file_size = $file_size;
-        $this->course_id = $course_id;
-        $this->subtype = $subtype;
-        $this->uploaded_by = $uploaded_by;
-        $this->uploaded_at = $uploaded_at;
-        $this->uploader_name = $uploader_name;
-        $this->course_name = $course_name;
-    }
+//     public function __construct($id, $stored_name, $mime_type, $file_size, $course_id = null, $subtype = null, $file_url = null)
+//     {
+//         $this->id = $id;
+//         $this->stored_name = $stored_name;
+//         $this->mime_type = $mime_type;
+//         $this->file_size = $file_size;
+//         $this->course_id = $course_id;
+//         $this->subtype = $subtype;
+//         $this->file_url = $file_url;
+//     }
 
-    public function toArray()
-    {
-        return [
-            'id' => $this->id,
-            'filename' => $this->filename,
-            'stored_name' => $this->stored_name,
-            'file_path' => $this->file_path,
-            'mime_type' => $this->mime_type,
-            'file_size' => $this->file_size,
-            'course_id' => $this->course_id,
-            'subtype' => $this->subtype,
-            'uploaded_by' => $this->uploaded_by,
-            'uploaded_at' => $this->uploaded_at,
-            'uploader_name' => $this->uploader_name,
-            'course_name' => $this->course_name
-        ];
-    }
-
-    /**
-     * Check if this is a profile picture
-     */
-    public function isProfilePicture()
-    {
-        return $this->course_id === null;
-    }
-
-    /**
-     * Check if this is a course file
-     */
-    public function isCourseFile()
-    {
-        return $this->course_id !== null;
-    }
-}
+//     public function toArray()
+//     {
+//         return [
+//             'id' => $this->id,
+//             'stored_name' => $this->stored_name,
+//             'mime_type' => $this->mime_type,
+//             'file_size' => $this->file_size,
+//             'course_id' => $this->course_id,
+//             'subtype' => $this->subtype,
+//             'file_url' => $this->file_url
+//         ];
+//     }
+//     public function isCourseFile()
+//     {
+//         return $this->course_id !== null;
+//     }
+// }    
 ?>

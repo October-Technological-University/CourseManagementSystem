@@ -114,6 +114,7 @@ $routePatterns = [
         'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
         'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
         'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
+        'api/files/serve/{storedName}' => fn($storedName) => (new FileAttachmentController())->serve($storedName),
     ],
     'POST' => [
         'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
@@ -148,12 +149,11 @@ $routePatterns = [
 // Route matching with parameter support
 $matched = false;
 if (isset($router[$method])) {
-    foreach ($router[$method] as $routePattern => $callback) {
+    foreach (array_merge($router[$method], $routePatterns[$method] ?? []) as $routePattern => $callback) {
         $params = [];
         if (matchRoute($routePattern, $uri, $params)) {
             call_user_func_array($callback, $params);
-            $matched = true;
-            break;
+            exit;
         }
     }
 }
