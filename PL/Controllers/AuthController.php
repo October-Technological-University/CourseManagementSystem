@@ -49,7 +49,6 @@ class AuthController extends BaseController
             BaseController::success(
                 [
                     'user' => $result['user'],
-                    'token' => $result['token']
                 ],
                 'Login successful'
             );
@@ -62,13 +61,38 @@ class AuthController extends BaseController
         );
         exit;
     }
+    public function changePassword()
+    {
+        $data = self::getJsonInput();
+
+        // Fix 1: Validate input existence to stop the "Undefined array key" warnings
+        if (!isset($data['current_password']) || !isset($data['new_password'])) {
+            BaseController::error('Current and new password are required', 400);
+            exit;
+        }
+
+        $result = $this->authService->changePassword($data['current_password'], $data['new_password']);
+
+        // Fix 2: Sync keys. Your service returns 'status' or 'success'
+        // Let's standardize the Service to return 'success' to match the rest of your app.
+        if (isset($result['success']) && $result['success']) {
+            BaseController::success(null, 'Password changed successfully');
+            exit;
+        }
+
+        // Fix 3: Robust Error Handling
+        $errorMessage = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'An unexpected error occurred');
+
+        BaseController::error($errorMessage, 400);
+        exit;
+    }
     public function logout()
     {
         $this->authService->logout();
         BaseController::success(
             null,
             'Logout successful'
-            );
+        );
         exit;
     }
 }
