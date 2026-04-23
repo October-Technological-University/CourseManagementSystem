@@ -9,6 +9,7 @@ require_once BASE_PATH . 'DAL/Database/Database.php';
 
 require_once __DIR__ . '/../Controllers/BaseController.php';
 require_once __DIR__ . '/../Controllers/AuthController.php';
+require_once __DIR__ . '/../Controllers/FileAttachmentController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
@@ -54,8 +55,8 @@ try {
 // ROUTER CONFIGURATION
 // Register your routes here in the format:
 // 'METHOD' => ['route/path' => callback]
+// For parameterized routes, use {param} syntax
 // ============================================================
-
 
 $router = [
     'GET' => [
@@ -65,6 +66,11 @@ $router = [
             BaseController::success(['message' => 'Test route works!', 'timestamp' => time()]);
         },
         'api/testdatabase' => fn() => BaseController::success(['message' => 'DBContext connection active']),
+        'api/files/download/{id}' => fn($id) => (new FileAttachmentController())->download($id),
+        'api/files/course/{courseId}' => fn($courseId) => (new FileAttachmentController())->getCourseFiles($courseId),
+        'api/files/course/{courseId}/assignments' => fn($courseId) => (new FileAttachmentController())->getCourseAssignments($courseId),
+        'api/files/course/{courseId}/resources' => fn($courseId) => (new FileAttachmentController())->getCourseResources($courseId),
+        'api/files/{id}' => fn($id) => (new FileAttachmentController())->getById($id),
     ],
     'POST' => [
         'api/auth/register' => fn() => (new AuthController())->register(),
@@ -77,12 +83,15 @@ $router = [
             AuthMiddleware::requireAuth();
             (new AuthController())->changePassword();
         },
+        'api/files/upload/course' => fn() => (new FileAttachmentController())->uploadCourseFile(),
+        'api/files/upload/profile' => fn() => (new FileAttachmentController())->uploadProfilePicture(),
         // Example: 'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())
     ],
     'PUT' => [
         // Example: 'api/users/{id}' => fn($id) => (new UserController())->update($id, BaseController::getJsonInput())
     ],
     'DELETE' => [
+        'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),
         // Example: 'api/users/{id}' => fn($id) => (new UserController())->delete($id)
     ]
 ];
@@ -109,13 +118,41 @@ $router = [
 // to prevent further execution
 // ============================================================
 
-// Route matching
-if (isset($router[$method][$uri])) {
-    $router[$method][$uri]();
-} else {
-    // For debugging later.
-    // echo '<br>' . $method . $uri . ' not found <br> <br>';
+// Route matching with parameter support
+$matched = false;
+if (isset($router[$method])) {
+    foreach ($router[$method] as $routePattern => $callback) {
+        $params = [];
+        if (matchRoute($routePattern, $uri, $params)) {
+            call_user_func_array($callback, $params);
+            $matched = true;
+            break;
+        }
+    }
+}
 
+if (!$matched) {
     BaseController::error('Route not found', 404);
+}
+
+/**
+ * Match route pattern with URI and extract parameters
+ * @param string $pattern Route pattern with {param} placeholders
+ * @param string $uri Actual URI
+ * @param array &$params Reference to array that will hold extracted parameters
+ * @return bool True if pattern matches
+ */
+function matchRoute($pattern, $uri, &$params)
+{
+    // Convert pattern to regex
+    $regex = preg_replace('/\{([^}]+)\}/', '([^/]+)', $pattern);
+    $regex = '#^' . $regex . '$#';
+
+    if (preg_match($regex, $uri, $matches)) {
+        // Extract parameters (skip full match at index 0)
+        $params = array_slice($matches, 1);
+        return true;
+    }
+    return false;
 }
 
