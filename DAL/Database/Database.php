@@ -5,7 +5,7 @@ class Database
 
     public function __construct()
     {
-        $env = parse_ini_file(BASE_PATH . '/config/.env');
+        $env = parse_ini_file(BASE_PATH . 'config/.env');
         if ($env === false) {
             die("Failed to read database configuration.");
         }
@@ -58,7 +58,8 @@ class Database
     }
 
     // A method DB Connection Testing
-    public function testConnection() :mysqli_result{
+    public function testConnection(): mysqli_result
+    {
         return $this->conn->execute_query("SELECT 1;");
     }
 }

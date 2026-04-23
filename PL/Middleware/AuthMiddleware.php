@@ -2,18 +2,12 @@
 
 require_once __DIR__ . '/../../utils/ResponseHelper.php';
 require_once __DIR__ . '/../../DAL/Repository/UserRepository.php';
+require_once __DIR__ . '/../../utils/Security.php';
 
-/**
- * Authentication middleware using PHP sessions
- * Simplified approach for college project - no remember tokens needed
- */
 class AuthMiddleware
 {
     private static $authenticatedUser = null;
 
-    /**
-     * Start session if not already started
-     */
     private static function startSession()
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -22,8 +16,7 @@ class AuthMiddleware
     }
 
     /**
-     * Authenticate request using session
-     * Returns user object if authenticated, null otherwise
+     * Authenticate request using Session OR Encrypted Cookie
      */
     public static function authenticate()
     {
@@ -33,12 +26,28 @@ class AuthMiddleware
 
         self::startSession();
 
-        if (!isset($_SESSION['user_id'])) {
+        // 1. Try Session first
+        $userId = $_SESSION['user_id'] ?? null;
+
+        // 2. If no session, try the Remember Me Cookie
+        if (!$userId && isset($_COOKIE['remember_me'])) {
+            $decodedData = Security::decryptToken($_COOKIE['remember_me']);
+            
+            if ($decodedData && isset($decodedData['id'])) {
+                // Restore session from cookie data
+                $userId = $decodedData['id'];
+                $_SESSION['user_id'] = $userId;
+                $_SESSION['user_role'] = $decodedData['role'] ?? null;
+            }
+        }
+
+        if (!$userId) {
             return null;
         }
 
+        // 3. Verify user still exists in DB
         $userRepo = new UserRepository();
-        $user = $userRepo->getById($_SESSION['user_id']);
+        $user = $userRepo->getById($userId);
 
         if (!$user) {
             self::logout();
@@ -50,7 +59,7 @@ class AuthMiddleware
     }
 
     /**
-     * Require authentication - sends error response if not authenticated
+     * Require authentication - used at the top of protected routes
      */
     public static function requireAuth()
     {
@@ -63,8 +72,7 @@ class AuthMiddleware
     }
 
     /**
-     * Require specific role(s)
-     * Accepts single role string or array of roles
+     * Role-based access control
      */
     public static function requireRole($roles)
     {
@@ -82,82 +90,19 @@ class AuthMiddleware
     }
 
     /**
-     * Check if user is authenticated without sending error
-     */
-    public static function check()
-    {
-        return self::authenticate() !== null;
-    }
-
-    /**
-     * Check if authenticated user has specific role
-     */
-    public static function hasRole($roles)
-    {
-        $user = self::authenticate();
-        if (!$user) {
-            return false;
-        }
-
-        $userRole = strtolower($user->getRole());
-        $allowedRoles = is_array($roles) ? array_map('strtolower', $roles) : [strtolower($roles)];
-
-        return in_array($userRole, $allowedRoles);
-    }
-
-    /**
-     * Get authenticated user ID
-     */
-    public static function getUserId()
-    {
-        self::startSession();
-        return $_SESSION['user_id'] ?? null;
-    }
-
-    /**
-     * Get authenticated user role
-     */
-    public static function getUserRole()
-    {
-        self::startSession();
-        return $_SESSION['user_role'] ?? null;
-    }
-
-    /**
-     * Get full authenticated user object
-     */
-    public static function getUser()
-    {
-        return self::authenticate();
-    }
-
-    /**
-     * Log a user in - call this after verifying credentials
-     * Usage: AuthMiddleware::login($user)
-     */
-    public static function login($user)
-    {
-        self::startSession();
-        session_regenerate_id(true);
-
-        $_SESSION['user_id'] = $user->getId();
-        $_SESSION['user_role'] = $user->getRole();
-        $_SESSION['user_email'] = $user->getEmail();
-
-        self::$authenticatedUser = $user;
-    }
-
-    /**
-     * Clear authentication (logout)
+     * Update logout to clear both Session and the Security Cookie
      */
     public static function logout()
     {
         self::startSession();
+        
+        // Clear PHP Session
         session_unset();
         session_destroy();
-
-        // Kill the session cookie
         setcookie(session_name(), '', time() - 3600, '/');
+
+        // Clear the Remember Me Cookie via Security class
+        Security::clearRememberMeCookie();
 
         self::$authenticatedUser = null;
     }

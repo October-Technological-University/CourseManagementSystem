@@ -3,6 +3,7 @@ require_once __DIR__ . '/../Mappers/UserMapper.php';
 require_once __DIR__ . '/../../DAL/Repository/UserRepository.php';
 require_once __DIR__ . '/../../utils/Security.php';
 require_once __DIR__ . '/../../utils/Validator.php';
+require_once __DIR__ . '/../../DAL/Entities/User.php';
 
 class AuthService
 {
@@ -48,40 +49,6 @@ class AuthService
         return [
             'success' => true,
             'user' => $createdUser
-        ];
-    }
-
-    public function update(array $data): array
-    {
-        // Validate required fields
-        if (!$this->validator->validateRequired($data, ['email', 'first_name', 'last_name'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Validate email format
-        if (!$this->validator->validateEmail($data['email'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Check if user exists
-        $user = $this->userRepository->getByEmail($data['email']);
-        if (!$user) {
-            return ['success' => false, 'errors' => ['User not found']];
-        }
-
-        // Update user entity and save to database
-        $userEntity = $this->userMapper->toEntity(new UserRequestDTO(
-            $data['email'],
-            null, // Password is not updated here
-            $data['first_name'],
-            $data['last_name']
-        ));
-        $isUpdated = $this->userRepository->update($userEntity);
-        $updatedUser = $this->userMapper->toDTO($this->userRepository->getById($isUpdated));
-        // Return success response with updated user data (excluding sensitive info)
-        return [
-            'success' => true,
-            'user' => $updatedUser
         ];
     }
 
@@ -132,47 +99,81 @@ class AuthService
         if (!Security::verifyPassword($data['password'], $user->getPassword())) {
             return ['success' => false, 'errors' => ['Invalid email or password']];
         }
+        // 1. SET THE REMEMBER ME COOKIE HERE
+        // Usually triggered if a "Remember Me" checkbox was checked in the UI
+        // if (isset($data['remember']) && $data['remember'] === true) {
+        Security::setRememberMeCookie([
+            'id' => $user->getId(),
+            'role' => $user->getRole(),
+            'email' => $user->getEmail()
+        ]);
+        // }
 
-        // Start session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        // Generate session token
-        $token = bin2hex(random_bytes(32));
-        $_SESSION['user_id'] = $user->getId();
-        $_SESSION['user_email'] = $user->getEmail();
-        $_SESSION['auth_token'] = $token;
 
         // Return success response with user data and token
         return [
             'success' => true,
             'user' => $this->userMapper->toDTO($user),
-            'token' => $token
         ];
     }
-    public function logout(): array
+    public function changePassword($currentPassword, $newPassword)
     {
-
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        // 1. Checks the remember_me token
+        // We look for the cookie and attempt to decrypt it
+        $token = $_COOKIE['remember_me'] ?? null;
+        if (!$token) {
+            return ['success' => false, 'error' => 'Authentication token missing.'];
         }
 
-
-        Security::unsetTokenFromCookies();
-
-        $_SESSION = [];
-
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
-            );
+        $userData = Security::decryptToken($token);
+        if (!$userData) {
+            return ['success' => false, 'error' => 'Invalid or expired session.'];
         }
-        
-        session_destroy();
 
-        return ['success' => true];
+        $userId = $userData['id'];
+
+        // 2. Checks if the new password is the same as the current password
+        // (Pre-validation check to save DB resources)
+        if ($currentPassword === $newPassword) {
+            return ['success' => false, 'error' => 'New password cannot be the same as the current password.'];
+        }
+
+        // Fetch the user from the database to get the current hash
+        $user = $this->userRepository->getById($userId);
+
+        if (!$user) {
+            return ['success' => false, 'error' => 'User not found.'];
+        }
+
+        // 3. Checks if the current password is correct
+        if (!Security::verifyPassword($currentPassword, $user->getPassword())) {
+            return ['success' => false, 'error' => 'Current password is incorrect.'];
+        }
+
+        // 4. Validate the new password using Validator's functions
+        if (!$this->validator->validatePassword($newPassword)) {
+            return ['success' => false, 'errors' => $this->validator->getErrors()];
+        }
+
+        // If all validations pass, proceed to update
+        $newHash = Security::hashPassword($newPassword);
+        $user->setPassword($newHash);
+        $updateStmt = $this->userRepository->update($user);
+
+        if ($updateStmt > 0) {
+            return ['success' => true, 'message' => 'Password updated successfully.'];
+        }
+
+        return ['success' => false, 'error' => 'Failed to update password in database.'];
     }
+
+    /**
+     * Logout helper using the refactored Security class
+     */
+    public function logout()
+    {
+        $security = new Security();
+        $security->clearRememberMeCookie();
+    }
+
 }
