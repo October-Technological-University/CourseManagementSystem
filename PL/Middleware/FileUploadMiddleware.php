@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../utils/ResponseHelper.php';
-require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ .'/../../config/constants.php';
 /**
  * File Upload Middleware
  * Handles validation and processing of uploaded files

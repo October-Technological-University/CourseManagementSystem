@@ -121,8 +121,9 @@ class CourseRepository extends BaseRepository
             $course->getId()
         ]);
 
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -132,8 +133,9 @@ class CourseRepository extends BaseRepository
     {
         $sql = "UPDATE `{$this->table}` SET CourseImageId = ? WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'ii', [$image_id, $course_id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -143,8 +145,9 @@ class CourseRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'i', [$id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**

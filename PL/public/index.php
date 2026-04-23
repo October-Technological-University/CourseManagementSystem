@@ -10,6 +10,7 @@ require_once BASE_PATH . 'DAL/Database/Database.php';
 require_once __DIR__ . '/../Controllers/BaseController.php';
 require_once __DIR__ . '/../Controllers/AuthController.php';
 require_once __DIR__ . '/../Controllers/FileAttachmentController.php';
+require_once __DIR__ . '/../Controllers/UserController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 
 foreach (glob(BASE_PATH . "DAL/Repository/*.php") as $filename) {
@@ -71,6 +72,9 @@ $router = [
         'api/files/course/{courseId}/assignments' => fn($courseId) => (new FileAttachmentController())->getCourseAssignments($courseId),
         'api/files/course/{courseId}/resources' => fn($courseId) => (new FileAttachmentController())->getCourseResources($courseId),
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->getById($id),
+        'api/users' => fn() => (new UserController())->index(),
+        'api/users/students' => fn() => (new UserController())->listStudents(),
+        'api/users/instructors' => fn() => (new UserController())->listInstructors(),
     ],
     'POST' => [
         'api/auth/register' => fn() => (new AuthController())->register(),
@@ -93,6 +97,20 @@ $router = [
     'DELETE' => [
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),
         // Example: 'api/users/{id}' => fn($id) => (new UserController())->delete($id)
+    ]
+];
+
+$routePatterns = [
+    'GET' => [
+        'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
+        'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
+        'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
+    ],
+    'POST' => [
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
+    ],
+    'DELETE' => [
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->removeProfilePicture((int)$id),
     ]
 ];
 
@@ -155,4 +173,45 @@ function matchRoute($pattern, $uri, &$params)
     }
     return false;
 }
+// Route matching
+if (isset($router[$method][$uri])) {
+    $router[$method][$uri]();
+    exit;
+}
+
+// Support simple variable segments like {id} in native PHP routing
+foreach ($routePatterns[$method] ?? [] as $routePattern => $handler) {
+    $patternSegments = explode('/', trim($routePattern, '/'));
+    $uriSegments = explode('/', trim($uri, '/'));
+
+    if (count($patternSegments) !== count($uriSegments)) {
+        continue;
+    }
+
+    $params = [];
+    $matched = true;
+    foreach ($patternSegments as $index => $segment) {
+        if (preg_match('/^\{(.+)\}$/', $segment, $matches)) {
+            $paramName = $matches[1];
+            if ($paramName === 'id' && !ctype_digit($uriSegments[$index])) {
+                $matched = false;
+                break;
+            }
+            $params[] = $uriSegments[$index];
+            continue;
+        }
+
+        if ($segment !== $uriSegments[$index]) {
+            $matched = false;
+            break;
+        }
+    }
+
+    if ($matched) {
+        $handler(...$params);
+        exit;
+    }
+}
+
+BaseController::error('Route not found', 404);
 
