@@ -119,5 +119,6 @@ class Security
             'secure' => true,
             'samesite' => 'Lax'
         ]);
+        unset($_COOKIE['remember_me']);
     }
 }

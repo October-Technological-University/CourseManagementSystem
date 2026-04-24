@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Instructors
+method: GET
+url: '{{baseUrl}}/api/users/instructors'
+order: 3000

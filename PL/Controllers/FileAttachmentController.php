@@ -9,10 +9,11 @@ require_once __DIR__ . '/../../utils/FileStorageHelper.php';
 class FileAttachmentController extends BaseController
 {
     private $fileAttachmentService;
-
+    private $courseService;
     public function __construct()
     {
         $this->fileAttachmentService = new FileAttachmentService();
+        $this->courseService = new CourseService();
     }
 
     /**
@@ -24,11 +25,24 @@ class FileAttachmentController extends BaseController
         try {
             // Authenticate user
             $user = AuthMiddleware::requireAuth();
+            AuthMiddleware::requireRole('instructor');
             $userId = $user->getId();
 
+            
             // Get POST data
             $courseId = $_POST['course_id'] ?? null;
             $subtype = $_POST['subtype'] ?? null;
+            
+            $course = $this->courseService->getById($_POST['course_id'] ?? 0); // Validate course exists
+            if (!$course) {
+                $this->error('Course not found', 404);
+                return;
+            }
+
+            if ($course['data'] !== $userId && strtolower($user->getRole()) !== 'admin') {
+                $this->error('Forbidden. You are not the instructor of this course.', 403);
+                return;
+            }
 
             if (!$courseId || !$subtype) {
                 $this->error('course_id and subtype are required', 400);
@@ -58,40 +72,6 @@ class FileAttachmentController extends BaseController
             $response = $result['data'];
             $response->file_url = $result['file_url'];
             $this->success($response, 'File uploaded successfully', 201);
-        } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * POST /api/files/upload/profile
-     * Upload or replace profile picture
-     */
-    public function uploadProfilePicture()
-    {
-        try {
-            // Authenticate user
-            $user = AuthMiddleware::requireAuth();
-            $userId = $user->getId();
-
-            // Require and process image upload
-            $rawFile = FileUploadMiddleware::requireUpload('file');
-            $fileData = FileUploadMiddleware::process($rawFile, 'image');
-            if (!$fileData) {
-                return; // Error already sent by process()
-            }
-
-            // Upload file via service
-            $result = $this->fileAttachmentService->uploadFile($fileData, $userId, 'profile', null, null);
-
-            if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 400);
-                return;
-            }
-
-            $response = $result['data'];
-            $response->file_url = $result['file_url'];
-            $this->success($response, 'Profile picture uploaded successfully', 201);
         } catch (Exception $e) {
             $this->error('An error occurred: ' . $e->getMessage(), 500);
         }

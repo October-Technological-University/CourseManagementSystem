@@ -1,0 +1,15 @@
+$kind: http-request
+name: List All Courses
+method: GET
+url: '{{baseUrl}}/api/courses'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+    disabled: true
+  - key: limit
+    value: '10'
+    disabled: true
+  - key: search
+    value: ''
+    disabled: true

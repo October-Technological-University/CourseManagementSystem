@@ -1,0 +1,5 @@
+$kind: http-request
+name: Download File
+method: GET
+url: '{{baseUrl}}/api/files/download/{{fileId}}'
+order: 5000

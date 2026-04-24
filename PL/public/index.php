@@ -95,7 +95,6 @@ $router = [
             (new AuthController())->changePassword();
         },
         'api/files/upload/course' => fn() => (new FileAttachmentController())->uploadCourseFile(),
-        'api/files/upload/profile' => fn() => (new FileAttachmentController())->uploadProfilePicture(),
         'api/courses' => fn() => (new CourseController())->create(),
         'api/courses/{id}/generate-code' => fn($id) => (new CourseController())->generateCode((int)$id),
         'api/enrollments' => fn() => (new EnrollmentController())->enroll(),
@@ -108,21 +107,25 @@ $router = [
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),
         'api/courses/{id}' => fn($id) => (new CourseController())->delete((int)$id),
         'api/enrollments/drop' => fn() => (new EnrollmentController())->drop(),
+        'api/users/delete' => fn() => (new UserController())->deleteAccount(),
     ]
 ];
 
 $routePatterns = [
     'GET' => [
         'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
-        'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
-        'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
+        // OVERLAPPED WITH show() - getById() will return either student or instructor based on ID
+        // 'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
+        // 'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
         'api/files/serve/{storedName}' => fn($storedName) => (new FileAttachmentController())->serve($storedName),
     ],
     'POST' => [
         'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
+        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->uploadCourseImage((int)$id),
     ],
     'DELETE' => [
         'api/users/{id}/profile-picture' => fn($id) => (new UserController())->removeProfilePicture((int)$id),
+        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->removeCourseImage((int)$id),
     ]
 ];
 

@@ -2,9 +2,12 @@
 require_once __DIR__ . '/../../DAL/Repository/CourseRepository.php';
 require_once __DIR__ . '/../../DAL/Repository/UserRepository.php';
 require_once __DIR__ . '/../../DAL/Repository/CourseStudentRepository.php';
+require_once __DIR__ . '/../../DAL/Repository/FileAttachmentRepository.php';                                                                                                                 
 require_once __DIR__ . '/../../DAL/DTOs/CourseDTOs.php';
 require_once __DIR__ . '/../../BLL/Mappers/CourseMapper.php';
+require_once __DIR__ . '/../../BLL/Services/FileAttachmentService.php';                                                                                                                      
 require_once __DIR__ . '/../../utils/Validator.php';
+require_once __DIR__ . '/../../utils/FileStorageHelper.php';  
 
 class CourseService
 {
@@ -13,7 +16,8 @@ class CourseService
     private $enrollmentRepo;
     private $mapper;
     private $validator;
-
+    private $fileAttachmentRepo;
+    private $fileAttachmentService;
     public function __construct()
     {
         $this->courseRepo     = new CourseRepository();
@@ -21,6 +25,8 @@ class CourseService
         $this->enrollmentRepo = new CourseStudentRepository();
         $this->mapper         = new CourseMapper();
         $this->validator      = new Validator();
+        $this->fileAttachmentRepo = new FileAttachmentRepository();
+        $this->fileAttachmentService = new FileAttachmentService();
     }
 
     public function create(array $data): array
@@ -33,7 +39,12 @@ class CourseService
             return ['success' => false, 'errors' => ['Invalid date format. Use Y-m-d.']];
         }
         if (empty($data['code'])) {
-            $data['code'] = null; 
+            $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+            while ($this->courseRepo->getByCode($code) !== null) {
+                // If the generated code already exists, generate a new one
+                $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+                }
+            $data['code'] = $code;
         }
         if (strtotime($data['end_date']) <= strtotime($data['start_date'])) {
             return ['success' => false, 'errors' => ['end_date must be after start_date']];
@@ -199,4 +210,71 @@ class CourseService
             return $this->mapper->toDTO($course, $enrolled, $name);
         }, $courses);
     }
+    public function uploadCourseImage(array $fileData, int $courseId, int $userId): array                                                                                                   
+    {                                                                                                                                                                                       
+        $course = $this->courseRepo->getById($courseId);                                                                                                                                    
+        if (!$course) {                                                                                                                                                                     
+            return ['success' => false, 'errors' => ['Course not found']];                                                                                                                  
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        if (!$this->validator->validateRequired($fileData, ['filename', 'tmp_path', 'mime_type', 'size', 'stored_name'])) {                                                                 
+            return ['success' => false, 'errors' => $this->validator->getErrors()];                                                                                                         
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        $oldImageId = $course->getCourseImageId();                                                                                                                                          
+        $oldImage = $oldImageId ? $this->fileAttachmentRepo->getById($oldImageId) : null;                                                                                                   
+                                                                                                                                                                                            
+        $uploadResult = $this->fileAttachmentService->uploadFile($fileData, $userId, 'cover', null, null);                                                                                  
+        if (!$uploadResult['success']) {                                                                                                                                                    
+            return $uploadResult;                                                                                                                                                           
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        $fileDto = $uploadResult['data'];                                                                                                                                                   
+        $updateResult = $this->courseRepo->updateCourseImage($courseId, $fileDto->id);                                                                                                      
+        if ($updateResult <= 0) {                                                                                                                                                           
+            $this->fileAttachmentRepo->delete($fileDto->id);                                                                                                                                
+            FileStorageHelper::delete($fileDto->file_path);                                                                                                                                 
+            return ['success' => false, 'errors' => ['Failed to update course image']];                                                                                                     
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        if ($oldImage && $oldImage->getId() !== $fileDto->id) {                                                                                                                             
+            $this->fileAttachmentRepo->delete($oldImage->getId());                                                                                                                          
+            FileStorageHelper::delete($oldImage->getFilePath());                                                                                                                            
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        return [                                                                                                                                                                            
+            'success' => true,                                                                                                                                                              
+            'data' => $fileDto,                                                                                                                                                             
+            'file_url' => $uploadResult['file_url']                                                                                                                                         
+        ];                                                                                                                                                                                  
+    }                                                                                                                                                                                       
+                                                                                                                                                                                            
+    public function removeCourseImage(int $courseId): array                                                                                                                                 
+    {                                                                                                                                                                                       
+        $course = $this->courseRepo->getById($courseId);                                                                                                                                    
+        if (!$course) {                                                                                                                                                                     
+            return ['success' => false, 'errors' => ['Course not found']];                                                                                                                  
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        $imageId = $course->getCourseImageId();                                                                                                                                             
+        if (!$imageId) {                                                                                                                                                                    
+            return ['success' => false, 'errors' => ['No course image found']];                                                                                                             
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        $image = $this->fileAttachmentRepo->getById($imageId);                                                                                                                              
+        if (!$image) {                                                                                                                                                                      
+            $this->courseRepo->updateCourseImage($courseId, null);                                                                                                                          
+            return ['success' => false, 'errors' => ['Course image record not found']];                                                                                                     
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        $deleted = $this->fileAttachmentRepo->delete($image->getId());                                                                                                                      
+        if ($deleted <= 0) {                                                                                                                                                                
+            return ['success' => false, 'errors' => ['Failed to remove course image']];                                                                                                     
+        }                                                                                                                                                                                   
+                                                                                                                                                                                            
+        FileStorageHelper::delete($image->getFilePath());                                                                                                                                   
+        $this->courseRepo->updateCourseImage($courseId, null);                                                                                                                              
+                                                                                                                                                                                            
+        return ['success' => true, 'message' => 'Course image removed successfully'];                                                                                                       
+    }   
 }

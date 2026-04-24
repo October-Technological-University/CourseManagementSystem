@@ -1,0 +1,17 @@
+$kind: http-request
+name: Update Course
+method: PUT
+url: '{{baseUrl}}/api/courses/{{courseId}}'
+order: 5000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Updated Course Title",
+      "description": "Updated course description.",
+      "category": "Computer Science",
+      "status": "active"
+    }
