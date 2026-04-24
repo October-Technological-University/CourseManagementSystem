@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Middleware/FileUploadMiddleware.php';
 require_once __DIR__ . '/../../BLL/Services/CourseService.php';
 
 class CourseController extends BaseController
@@ -153,6 +154,78 @@ class CourseController extends BaseController
         }
 
         self::error(implode(', ', $result['errors']), 404);
+    }
+
+    /**
+     * POST /api/courses/{id}/course-image
+     * Protected: admin or course's own instructor.
+     */
+    public function uploadCourseImage(int $id)
+    {
+        $user = AuthMiddleware::requireAuth();
+        $role = strtolower($user->getRole());
+
+        $result = $this->courseService->getById($id);
+        if (!$result['success']) {
+            self::error('Course not found', 404);
+            return;
+        }
+
+        if ($role !== 'admin' && $result['data']->instructor_id !== $user->getId()) {
+            self::error('Forbidden. Only the course instructor or an admin can upload a course image.', 403);
+            return;
+        }
+
+        $upload = FileUploadMiddleware::requireUpload('file');
+        $fileData = FileUploadMiddleware::process($upload, 'image');
+        if (!$fileData) {
+            return;
+        }
+
+        $uploadResult = $this->courseService->uploadCourseImage($fileData, $id, $user->getId());
+        if ($uploadResult['success']) {
+            self::success(
+                [
+                    'file' => $uploadResult['data'],
+                    'file_url' => $uploadResult['file_url'] ?? null
+                ],
+                'Course image uploaded successfully',
+                201
+            );
+            return;
+        }
+
+        $error = $uploadResult['error'] ?? (isset($uploadResult['errors']) ? implode(', ', $uploadResult['errors']) : 'Failed to upload course image');
+        self::error($error, 400);
+    }
+
+    /**
+     * DELETE /api/courses/{id}/course-image
+     * Protected: admin or course's own instructor.
+     */
+    public function removeCourseImage(int $id)
+    {
+        $user = AuthMiddleware::requireAuth();
+        $role = strtolower($user->getRole());
+
+        $result = $this->courseService->getById($id);
+        if (!$result['success']) {
+            self::error('Course not found', 404);
+            return;
+        }
+
+        if ($role !== 'admin' && $result['data']->instructor_id !== $user->getId()) {
+            self::error('Forbidden. Only the course instructor or an admin can remove the course image.', 403);
+            return;
+        }
+
+        $removeResult = $this->courseService->removeCourseImage($id);
+        if ($removeResult['success']) {
+            self::success(null, $removeResult['message']);
+            return;
+        }
+
+        self::error(implode(', ', $removeResult['errors']), 400);
     }
 
     /**

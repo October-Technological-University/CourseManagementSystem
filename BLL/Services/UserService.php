@@ -116,29 +116,19 @@ class UserService
         ];
     }
 
-    public function delete(array $data): array
+    public function delete($id): array
     {
-        // Validate required fields
-        if (!$this->validator->validateRequired($data, ['email'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Validate email format
-        if (!$this->validator->validateEmail($data['email'])) {
-            return ['success' => false, 'errors' => $this->validator->getErrors()];
-        }
-
-        // Check if user exists
-        $user = $this->userRepo->getByEmail($data['email']);
-        if (!$user) {
-            return ['success' => false, 'errors' => ['User not found']];
-        }
 
         // Delete user from database
-        $this->userRepo->delete($user->getId());
+        $isDeleted = $this->userRepo->delete($id);
 
-        // Return success response
-        return ['success' => true];
+        if ($isDeleted) {
+            // Return success response
+            return ['success' => true];
+        } else {
+            // Return error response
+            return ['success' => false, 'errors' => ['Failed to delete user']];
+        }
     }
 
     public function uploadProfilePicture(array $fileData, int $userId): array
