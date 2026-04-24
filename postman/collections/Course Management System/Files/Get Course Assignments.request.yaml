@@ -1,5 +1,0 @@
-$kind: http-request
-name: Get Course Assignments
-method: GET
-url: '{{baseUrl}}/api/files/course/{{courseId}}/assignments'
-order: 10000

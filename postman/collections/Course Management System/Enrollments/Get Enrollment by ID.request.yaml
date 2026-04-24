@@ -1,8 +1,0 @@
-$kind: http-request
-name: Get Enrollment by ID
-method: GET
-url: '{{baseUrl}}/api/enrollments/:enrollmentId'
-order: 2000
-pathVariables:
-  - key: enrollmentId
-    value: '{{enrollmentId}}'

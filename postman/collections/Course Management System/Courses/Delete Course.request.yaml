@@ -1,5 +1,0 @@
-$kind: http-request
-name: Delete Course
-method: DELETE
-url: '{{baseUrl}}/api/courses/{{courseId}}'
-order: 6000

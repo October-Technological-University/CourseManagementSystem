@@ -1,5 +1,0 @@
-$kind: http-request
-name: List Students
-method: GET
-url: '{{baseUrl}}/api/users/students'
-order: 2000

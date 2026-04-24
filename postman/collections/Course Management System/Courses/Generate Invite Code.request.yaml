@@ -1,5 +1,0 @@
-$kind: http-request
-name: Generate Invite Code
-method: POST
-url: '{{baseUrl}}/api/courses/{{courseId}}/generate-code'
-order: 7000

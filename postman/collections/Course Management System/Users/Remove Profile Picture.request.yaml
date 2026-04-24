@@ -1,5 +1,0 @@
-$kind: http-request
-name: Remove Profile Picture
-method: DELETE
-url: '{{baseUrl}}/api/users/{{userId}}/profile-picture'
-order: 8000
