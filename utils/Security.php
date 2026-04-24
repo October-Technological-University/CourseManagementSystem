@@ -1,9 +1,32 @@
 <?php
-require_once __DIR__ . '/../config/constants.php';
 class Security
 {
-    private static $cipher = Constants::CIPHER;
-    private static $key = Constants::KEY;
+    private static $cipher;
+    private static $key;
+    private static $loaded = false;
+
+    private static function loadConfig()
+    {
+        if (self::$loaded) return;
+
+        $envPath = defined('BASE_PATH')
+            ? BASE_PATH . 'config/.env'
+            : dirname(__DIR__) . '/config/.env';
+
+        $env = parse_ini_file($envPath);
+        if ($env === false) {
+            throw new \RuntimeException('Failed to read encryption configuration from .env');
+        }
+
+        self::$cipher = $env['ENCRYPTION_CIPHER'] ?? 'aes-256-cbc';
+        self::$key = $env['ENCRYPTION_KEY'] ?? '';
+
+        if (empty(self::$key)) {
+            throw new \RuntimeException('ENCRYPTION_KEY must be set in config/.env');
+        }
+
+        self::$loaded = true;
+    }
     /**
      * Hash a password using bcrypt
      */
@@ -26,6 +49,7 @@ class Security
      */
     public static function encryptToken(array $data)
     {
+        self::loadConfig();
         $ivLength = openssl_cipher_iv_length(self::$cipher);
         $iv = random_bytes($ivLength); // Generate a random IV
 
@@ -48,6 +72,7 @@ class Security
      */
     public static function decryptToken($token)
     {
+        self::loadConfig();
         $c = base64_decode($token);
         $ivLength = openssl_cipher_iv_length(self::$cipher);
         $hmacLength = 32; // SHA256 hmac length
