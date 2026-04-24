@@ -25,6 +25,10 @@ class AuthService
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
+        if(strtolower($data['role']) == 'admin') {
+            return ['success' => false, 'errors' => ['Cannot assign admin role during registration']];
+        }
+
         // Validate email and password formats
         if (!$this->validator->validateEmail($data['email']) || !$this->validator->validatePassword($data['password'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
@@ -35,9 +39,11 @@ class AuthService
             return ['success' => false, 'errors' => ['Email already in use']];
         }
 
-        if ($data['role'] ?? null) {
-            $validRoles = ['student', 'instructor', 'admin'];
-            if (!in_array($data['role'], $validRoles)) {
+        $role = strtolower($data['role'] ?? 'student');
+
+        if ($role ?? null) {
+            $validRoles = ['student', 'instructor'];
+            if (!in_array($role, $validRoles)) {
                 return ['success' => false, 'errors' => ['Invalid role specified']];
             }
         }

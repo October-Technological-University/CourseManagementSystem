@@ -52,19 +52,19 @@ class UserController
         $this->respond($this->userService->getAllInstructors());
     }
 
-    public function showStudent(int $id)
-    {
-        AuthMiddleware::requireAuth();
-        AuthMiddleware::requireRole('admin');
-        $this->respond($this->userService->getStudentById($id));
-    }
+    // OVERLAPPED WITH show() - getById() will return either student or instructor based on ID
 
-    public function showInstructor(int $id)
-    {
-        AuthMiddleware::requireAuth();
-        AuthMiddleware::requireRole('admin');
-        $this->respond($this->userService->getInstructorById($id));
-    }
+    // public function showStudent(int $id)
+    // {
+    //     AuthMiddleware::requireAuth();
+    //     $this->respond($this->userService->getStudentById($id));
+    // }
+
+    // public function showInstructor(int $id)
+    // {
+    //     AuthMiddleware::requireAuth();
+    //     $this->respond($this->userService->getInstructorById($id));
+    // }
 
     public function uploadProfilePicture(int $userId)
     {
@@ -100,8 +100,9 @@ class UserController
         $this->respond($this->userService->removeProfilePicture($userId));
     }
 
-    public function deleteAccount($id){
+    public function deleteAccount(){
         $user = AuthMiddleware::requireAuth();
+        $id = $user->getId();
 
         if ($user->getId() != $id && !AuthMiddleware::requireRole('admin')) {
             BaseController::error('Forbidden. You can only delete your own account.', 403);
