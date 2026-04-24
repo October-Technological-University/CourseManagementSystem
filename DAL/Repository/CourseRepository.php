@@ -121,8 +121,9 @@ class CourseRepository extends BaseRepository
             $course->getId()
         ]);
 
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -132,8 +133,9 @@ class CourseRepository extends BaseRepository
     {
         $sql = "UPDATE `{$this->table}` SET CourseImageId = ? WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'ii', [$image_id, $course_id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -143,8 +145,9 @@ class CourseRepository extends BaseRepository
     {
         $sql = "DELETE FROM `{$this->table}` WHERE id = ?";
         $stmt = $this->executePreparedStatement($sql, 'i', [$id]);
+        $affectedRows = $this->getAffectedRows();
         $stmt->close();
-        return $this->getAffectedRows();
+        return $affectedRows;
     }
 
     /**
@@ -175,6 +178,37 @@ class CourseRepository extends BaseRepository
 
         $stmt->close();
         return $courses;
+    }
+
+    public function getEnrolledCount($course_id)
+    {
+        $sql = "SELECT COUNT(*) as count FROM course_students WHERE course_id = ? AND status = 'active'";
+        $stmt = $this->executePreparedStatement($sql, 'i', [$course_id]);
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        return (int)$row['count'];
+    }
+
+    public function isFull($course_id)
+    {
+        $sql = "SELECT c.capacity,
+                       COUNT(cs.id) as enrolled
+                FROM courses c
+                LEFT JOIN course_students cs
+                       ON cs.course_id = c.id AND cs.status = 'active'
+                WHERE c.id = ?
+                GROUP BY c.id";
+        $stmt = $this->executePreparedStatement($sql, 'i', [$course_id]);
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            return true;
+        }
+
+        return (int)$row['enrolled'] >= (int)$row['capacity'];
     }
 
     /**

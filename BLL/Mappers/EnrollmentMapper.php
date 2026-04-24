@@ -1,5 +1,9 @@
 <?php
 
+require_once __DIR__ . '/UserMapper.php';
+require_once __DIR__ . '/CourseMapper.php';
+require_once __DIR__ . '/../../DAL/DTOs/UserDTOs.php';
+
 /**
  * EnrollmentMapper
  * 

@@ -5,8 +5,8 @@ class Constants
     public const ALLOWED_MIME_TYPES = [
         // Images
         'image/jpeg' => 'jpg',
-        'image/png'  => 'png',
-        'image/gif'  => 'gif',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
         'image/webp' => 'webp',
         // Documents
         'application/pdf' => 'pdf',
