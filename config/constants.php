@@ -18,8 +18,6 @@ class Constants
     public const FILE_STORAGE_PATH = __DIR__ . '../PL/public/uploads/documentations/';
     public const IMAGES_STORAGE_PATH = __DIR__ . '../PL/public/uploads/images/';
     public const SERVER_BASE_URL = 'http://localhost:8000/';
-    public const CIPHER = 'aes-256-cbc';
-    public const KEY = "d1f553100579a21c2d19bb145045beb3";
 
 }
 
