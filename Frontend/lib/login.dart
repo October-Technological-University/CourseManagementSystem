@@ -1,3 +1,4 @@
+import 'package:course_management_frontend/dashboard.dart';
 import 'package:course_management_frontend/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -20,20 +21,13 @@ class LoginPage extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment.bottomRight,
             radius: 1.5,
-            colors: [
-              Color(0xFF0D1630),
-              AppTheme.backgroundDark,
-            ],
+            colors: [Color(0xFF0D1630), AppTheme.backgroundDark],
           ),
         ),
         child: Stack(
           children: [
             // Background decoration lines
-            Positioned.fill(
-              child: CustomPaint(
-                painter: BackgroundPainter(),
-              ),
-            ),
+            Positioned.fill(child: CustomPaint(painter: BackgroundPainter())),
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(40),
@@ -112,20 +106,23 @@ class HeroSection extends StatelessWidget {
         ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
         const SizedBox(height: 48),
         Container(
-          width: 120,
-          height: 4,
-          decoration: BoxDecoration(
-            color: AppTheme.accentBlue,
-            borderRadius: BorderRadius.circular(2),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.accentBlue.withValues(alpha: 0.5),
-                blurRadius: 10,
-                spreadRadius: 2,
+              width: 120,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.accentBlue,
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentBlue.withValues(alpha: 0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 800.ms).scaleX(begin: 0, alignment: Alignment.centerLeft),
+            )
+            .animate()
+            .fadeIn(delay: 800.ms)
+            .scaleX(begin: 0, alignment: Alignment.centerLeft),
       ],
     );
   }
@@ -188,7 +185,7 @@ class _LoginCardState extends State<LoginCard> {
             ),
           ),
           const SizedBox(height: 40),
-          
+
           // Institutional Email
           const FieldLabel(label: 'INSTITUTIONAL EMAIL'),
           const SizedBox(height: 8),
@@ -196,9 +193,9 @@ class _LoginCardState extends State<LoginCard> {
             hint: 'enter your email',
             icon: LucideIcons.mail,
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Authentication Key
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -222,59 +219,70 @@ class _LoginCardState extends State<LoginCard> {
             icon: LucideIcons.key,
             isPassword: true,
           ),
-          
+
           const SizedBox(height: 40),
-          
+
           // Initialize Access Button
           SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF2563EB),
-                    Color(0xFF1E40AF),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+                width: double.infinity,
+                height: 56,
+                child: Container(
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Initialize Access',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const DashboardPage(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(LucideIcons.arrowRight, size: 18, color: Colors.white),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Initialize Access',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          LucideIcons.arrowRight,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
+              )
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .shimmer(
+                delay: 3.seconds,
+                duration: 2.seconds,
+                color: Colors.white.withValues(alpha: 0.1),
               ),
-            ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-           .shimmer(delay: 3.seconds, duration: 2.seconds, color: Colors.white.withValues(alpha: 0.1)),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.95, 0.95));
