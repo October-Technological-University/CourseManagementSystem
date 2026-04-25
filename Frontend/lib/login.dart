@@ -1,3 +1,4 @@
+import 'package:course_management_frontend/admin_dashboard.dart';
 import 'package:course_management_frontend/dashboard.dart';
 import 'package:course_management_frontend/instructor_dashboard.dart';
 import 'package:course_management_frontend/theme.dart';
@@ -140,8 +141,10 @@ class LoginCard extends StatefulWidget {
   State<LoginCard> createState() => _LoginCardState();
 }
 
+enum UserRole { student, instructor, admin }
+
 class _LoginCardState extends State<LoginCard> {
-  bool isStudent = true;
+  UserRole selectedRole = UserRole.student;
 
   @override
   Widget build(BuildContext context) {
@@ -175,15 +178,22 @@ class _LoginCardState extends State<LoginCard> {
                 Expanded(
                   child: RoleTab(
                     label: 'STUDENT',
-                    isActive: isStudent,
-                    onTap: () => setState(() => isStudent = true),
+                    isActive: selectedRole == UserRole.student,
+                    onTap: () => setState(() => selectedRole = UserRole.student),
                   ),
                 ),
                 Expanded(
                   child: RoleTab(
                     label: 'INSTRUCTOR',
-                    isActive: !isStudent,
-                    onTap: () => setState(() => isStudent = false),
+                    isActive: selectedRole == UserRole.instructor,
+                    onTap: () => setState(() => selectedRole = UserRole.instructor),
+                  ),
+                ),
+                Expanded(
+                  child: RoleTab(
+                    label: 'ADMIN',
+                    isActive: selectedRole == UserRole.admin,
+                    onTap: () => setState(() => selectedRole = UserRole.admin),
                   ),
                 ),
               ],
@@ -250,12 +260,20 @@ class _LoginCardState extends State<LoginCard> {
               ),
               child: ElevatedButton(
                 onPressed: () {
+                  Widget destination;
+                  switch (selectedRole) {
+                    case UserRole.student:
+                      destination = const DashboardPage();
+                      break;
+                    case UserRole.instructor:
+                      destination = const InstructorDashboardPage();
+                      break;
+                    case UserRole.admin:
+                      destination = const AdminDashboardPage();
+                      break;
+                  }
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => isStudent 
-                        ? const DashboardPage() 
-                        : const InstructorDashboardPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => destination),
                   );
                 },
                 style: ElevatedButton.styleFrom(
