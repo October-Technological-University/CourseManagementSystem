@@ -2,6 +2,13 @@
 // Use dirname to go up to the main root
 define('BASE_PATH', dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
 
+// Load environment variables (Docker env vars take precedence over .env file)
+require_once BASE_PATH . 'vendor/autoload.php';
+$dotenvPath = BASE_PATH . 'config';
+if (file_exists($dotenvPath . DIRECTORY_SEPARATOR . '.env')) {
+    Dotenv\Dotenv::createImmutable($dotenvPath)->load();
+}
+
 // Now the paths will resolve correctly as .../CourseManagementSystem/DAL/
 require_once BASE_PATH . 'DAL/Database/DBContext.php';
 require_once BASE_PATH . 'DAL/Database/InitialCreate.php';
@@ -78,10 +85,10 @@ $router = [
         'api/users/students' => fn() => (new UserController())->listStudents(),
         'api/users/instructors' => fn() => (new UserController())->listInstructors(),
         'api/courses' => fn() => (new CourseController())->index(),
-        'api/courses/instructor/{instructorId}' => fn($id) => (new CourseController())->getByInstructor((int)$id),
-        'api/courses/{id}' => fn($id) => (new CourseController())->show((int)$id),
-        'api/enrollments/course/{courseId}/students' => fn($id) => (new EnrollmentController())->getStudentsByCourse((int)$id),
-        'api/enrollments/student/{studentId}/courses' => fn($id) => (new EnrollmentController())->getCoursesByStudent((int)$id),
+        'api/courses/instructor/{instructorId}' => fn($id) => (new CourseController())->getByInstructor((int) $id),
+        'api/courses/{id}' => fn($id) => (new CourseController())->show((int) $id),
+        'api/enrollments/course/{courseId}/students' => fn($id) => (new EnrollmentController())->getStudentsByCourse((int) $id),
+        'api/enrollments/student/{studentId}/courses' => fn($id) => (new EnrollmentController())->getCoursesByStudent((int) $id),
     ],
     'POST' => [
         'api/auth/register' => fn() => (new AuthController())->register(),
@@ -96,16 +103,16 @@ $router = [
         },
         'api/files/upload/course' => fn() => (new FileAttachmentController())->uploadCourseFile(),
         'api/courses' => fn() => (new CourseController())->create(),
-        'api/courses/{id}/generate-code' => fn($id) => (new CourseController())->generateCode((int)$id),
+        'api/courses/{id}/generate-code' => fn($id) => (new CourseController())->generateCode((int) $id),
         'api/enrollments' => fn() => (new EnrollmentController())->enroll(),
         'api/enrollments/code' => fn() => (new EnrollmentController())->enrollByCode(),
     ],
     'PUT' => [
-        'api/courses/{id}' => fn($id) => (new CourseController())->update((int)$id),
+        'api/courses/{id}' => fn($id) => (new CourseController())->update((int) $id),
     ],
     'DELETE' => [
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),
-        'api/courses/{id}' => fn($id) => (new CourseController())->delete((int)$id),
+        'api/courses/{id}' => fn($id) => (new CourseController())->delete((int) $id),
         'api/enrollments/drop' => fn() => (new EnrollmentController())->drop(),
         'api/users/delete' => fn() => (new UserController())->deleteAccount(),
     ]
@@ -113,19 +120,19 @@ $router = [
 
 $routePatterns = [
     'GET' => [
-        'api/users/{id}' => fn($id) => (new UserController())->show((int)$id),
+        'api/users/{id}' => fn($id) => (new UserController())->show((int) $id),
         // OVERLAPPED WITH show() - getById() will return either student or instructor based on ID
         // 'api/users/student/{id}' => fn($id) => (new UserController())->showStudent((int)$id),
         // 'api/users/instructor/{id}' => fn($id) => (new UserController())->showInstructor((int)$id),
         'api/files/serve/{storedName}' => fn($storedName) => (new FileAttachmentController())->serve($storedName),
     ],
     'POST' => [
-        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int)$id),
-        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->uploadCourseImage((int)$id),
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->uploadProfilePicture((int) $id),
+        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->uploadCourseImage((int) $id),
     ],
     'DELETE' => [
-        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->removeProfilePicture((int)$id),
-        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->removeCourseImage((int)$id),
+        'api/users/{id}/profile-picture' => fn($id) => (new UserController())->removeProfilePicture((int) $id),
+        'api/courses/{id}/course-image' => fn($id) => (new CourseController())->removeCourseImage((int) $id),
     ]
 ];
 

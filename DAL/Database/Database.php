@@ -5,15 +5,10 @@ class Database
 
     public function __construct()
     {
-        $env = parse_ini_file(BASE_PATH . 'config/.env');
-        if ($env === false) {
-            die("Failed to read database configuration.");
-        }
-
-        $dbServer = $env['DATABASE_SERVER'] ?? 'localhost';
-        $dbUsername = $env['DATABASE_USERNAME'] ?? '';
-        $dbPassword = $env['DATABASE_PASSWORD'] ?? '';
-        $dbName = $env['DATABASE_NAME'] ?? '';
+        $dbServer = $_ENV['DATABASE_SERVER'] ?? 'localhost';
+        $dbUsername = $_ENV['DATABASE_USERNAME'] ?? '';
+        $dbPassword = $_ENV['DATABASE_PASSWORD'] ?? '';
+        $dbName = $_ENV['DATABASE_NAME'] ?? '';
 
         // 1. Initialize mysqli
         $this->conn = mysqli_init();
@@ -24,11 +19,11 @@ class Database
 
         // 2. Tell mysqli to use SSL (The parameters are: key, cert, ca, capath, cipher)
         // For Azure, passing NULLs is often enough to initiate a basic secure handshake
-        $this->conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
+        $this->conn->ssl_set(NULL, NULL, '/var/www/ssl/DigiCertGlobalRootG2.crt.pem', NULL, NULL);
 
         // 3. Connect using real_connect
         // The flag MYSQLI_CLIENT_SSL is the key here
-        $success = $this->conn->real_connect($dbServer, $dbUsername, $dbPassword, null, 3306, NULL, MYSQLI_CLIENT_SSL);
+        $success = $this->conn->real_connect($dbServer, $dbUsername, $dbPassword, $dbName, 3306, NULL, MYSQLI_CLIENT_SSL);
 
         if (!$success) {
             die("Connect Error (" . mysqli_connect_errno() . ") " . mysqli_connect_error());

@@ -658,6 +658,13 @@ if (PHP_SAPI === 'cli' && basename(__FILE__) === basename($argv[0] ?? '')) {
         define('BASE_PATH', dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
     }
 
+    // Load environment variables
+    require_once BASE_PATH . 'vendor/autoload.php';
+    $dotenvPath = BASE_PATH . 'config';
+    if (file_exists($dotenvPath . DIRECTORY_SEPARATOR . '.env')) {
+        Dotenv\Dotenv::createImmutable($dotenvPath)->load();
+    }
+
     echo "Database Seeding Tool" . PHP_EOL;
     echo "====================" . PHP_EOL . PHP_EOL;
 

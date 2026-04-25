@@ -18,8 +18,7 @@ class InitialCreate
     public function createTables()
     {
         try {
-            $env = parse_ini_file(BASE_PATH . 'config/.env');
-            $dbName = $env['DATABASE_NAME'] ?: 'course_management_system';
+            $dbName = $_ENV['DATABASE_NAME'] ?? 'course_management_system';
 
             // 1. Create the database first
             // Since we connected with NULL db name, we can run this:
