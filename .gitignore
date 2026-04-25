@@ -1,6 +1,8 @@
 # Osama's PC
 /8.5.5
 /current
+Database.Local.php
+DataSeed.Local.php
 
 # Ahmed's PC
 /UnitTesting
@@ -10,7 +12,7 @@
 
 # Ignore environment files
 /config/.env
-
+/vendor
 
 BLL/Mappers/MAPPERS_DOCUMENTATION.md
 
