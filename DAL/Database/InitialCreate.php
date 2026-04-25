@@ -18,13 +18,19 @@ class InitialCreate
     public function createTables()
     {
         try {
-            // Create database if not exists
-            $env = parse_ini_file(BASE_PATH . '/config/.env');
+            $env = parse_ini_file(BASE_PATH . 'config/.env');
             $dbName = $env['DATABASE_NAME'] ?: 'course_management_system';
-            $this->conn->query("CREATE DATABASE IF NOT EXISTS `$dbName`");
-            $this->conn->select_db($dbName);
 
-            // Create users table first (no dependencies)
+            // 1. Create the database first
+            // Since we connected with NULL db name, we can run this:
+            $this->conn->query("CREATE DATABASE IF NOT EXISTS `$dbName`") 
+                or throw new Exception("Database creation failed: " . $this->conn->error);
+
+            // 2. NOW select the database
+            $this->conn->select_db($dbName)
+                or throw new Exception("Selection failed: " . $this->conn->error);
+
+            // 3. Proceed with tables
             $this->createUsersTable();
 
             // Create courses table (depends on users)

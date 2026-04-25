@@ -15,30 +15,23 @@ class Database
         $dbPassword = $env['DATABASE_PASSWORD'] ?? '';
         $dbName = $env['DATABASE_NAME'] ?? '';
 
-        $this->conn = new mysqli($dbServer, $dbUsername, $dbPassword);
-        if ($this->conn->connect_error) {
-            die("Connection failed: " . $this->conn->connect_error);
+        // 1. Initialize mysqli
+        $this->conn = mysqli_init();
+
+        if (!$this->conn) {
+            die("mysqli_init failed");
         }
 
-        if (!empty($dbName)) {
-            // Try to select the database, catching exception if it doesn't exist
-            try {
-                if (!$this->conn->select_db($dbName)) {
-                    throw new Exception("Database not found");
-                }
-            } catch (Exception $e) {
-                // Database doesn't exist, try to create it
-                $escapedDbName = $this->escapeIdentifier($dbName);
-                $databaseCreationResult = $this->conn->query("CREATE DATABASE IF NOT EXISTS `$escapedDbName`");
-                if ($databaseCreationResult === false) {
-                    die("Database creation failed: " . $this->conn->error);
-                }
+        // 2. Tell mysqli to use SSL (The parameters are: key, cert, ca, capath, cipher)
+        // For Azure, passing NULLs is often enough to initiate a basic secure handshake
+        $this->conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
 
-                // Now try to select it again
-                if (!$this->conn->select_db($dbName)) {
-                    die("Database selection failed after creation: " . $this->conn->error);
-                }
-            }
+        // 3. Connect using real_connect
+        // The flag MYSQLI_CLIENT_SSL is the key here
+        $success = $this->conn->real_connect($dbServer, $dbUsername, $dbPassword, null, 3306, NULL, MYSQLI_CLIENT_SSL);
+
+        if (!$success) {
+            die("Connect Error (" . mysqli_connect_errno() . ") " . mysqli_connect_error());
         }
     }
 
