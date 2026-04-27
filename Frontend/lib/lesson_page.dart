@@ -1,3 +1,4 @@
+import 'package:course_management_frontend/resource_hub.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -122,7 +123,14 @@ class CourseSidebar extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ResourceHubPage(),
+                  ),
+                );
+              },
               icon: const Icon(LucideIcons.externalLink, size: 16),
               label: const Text('VIEW RESOURCES'),
               style: ElevatedButton.styleFrom(
