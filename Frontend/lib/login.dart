@@ -1,6 +1,7 @@
 import 'package:course_management_frontend/admin_dashboard.dart';
 import 'package:course_management_frontend/dashboard.dart';
 import 'package:course_management_frontend/instructor_dashboard.dart';
+import 'package:course_management_frontend/services/api_service.dart';
 import 'package:course_management_frontend/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -141,10 +142,71 @@ class LoginCard extends StatefulWidget {
   State<LoginCard> createState() => _LoginCardState();
 }
 
-enum UserRole { student, instructor, admin }
-
 class _LoginCardState extends State<LoginCard> {
-  UserRole selectedRole = UserRole.student;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _api = ApiService();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    // Clear previous error
+    setState(() => _errorMessage = null);
+
+    // Validate form
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await _api.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      // Navigate based on the role returned by the API
+      Widget destination;
+      switch (user.role) {
+        case 'student':
+          destination = const DashboardPage();
+          break;
+        case 'instructor':
+          destination = const InstructorDashboardPage();
+          break;
+        case 'admin':
+          destination = const AdminDashboardPage();
+          break;
+        default:
+          destination = const DashboardPage();
+      }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => destination),
+      );
+    } on ApiException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Connection error. Please check your network.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,187 +225,225 @@ class _LoginCardState extends State<LoginCard> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Role Selector
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentBlue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.accentBlue.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Icon(
+                      LucideIcons.lock,
+                      color: AppTheme.accentBlue,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'SECURE LOGIN',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
+            const SizedBox(height: 32),
+
+            // Error Message
+            if (_errorMessage != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.triangleAlert,
+                      color: Colors.red[300],
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          color: Colors.red[300],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 300.ms).shakeX(
+                    hz: 3,
+                    amount: 4,
+                    duration: 400.ms,
+                  ),
+
+            // Institutional Email
+            const FieldLabel(label: 'INSTITUTIONAL EMAIL'),
+            const SizedBox(height: 8),
+            CustomInputField(
+              hint: 'enter your email',
+              icon: LucideIcons.mail,
+              controller: _emailController,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Email is required';
+                }
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
+                  return 'Enter a valid email address';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) => _handleLogin(),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Authentication Key
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: RoleTab(
-                    label: 'STUDENT',
-                    isActive: selectedRole == UserRole.student,
-                    onTap: () => setState(() => selectedRole = UserRole.student),
-                  ),
-                ),
-                Expanded(
-                  child: RoleTab(
-                    label: 'INSTRUCTOR',
-                    isActive: selectedRole == UserRole.instructor,
-                    onTap: () => setState(() => selectedRole = UserRole.instructor),
-                  ),
-                ),
-                Expanded(
-                  child: RoleTab(
-                    label: 'ADMIN',
-                    isActive: selectedRole == UserRole.admin,
-                    onTap: () => setState(() => selectedRole = UserRole.admin),
+                const FieldLabel(label: 'AUTHENTICATION KEY'),
+                TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'Forgot Key?',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 40),
-          
-          // Institutional Email
-          const FieldLabel(label: 'INSTITUTIONAL EMAIL'),
-          const SizedBox(height: 8),
-          const CustomInputField(
-            hint: 'enter your email',
-            icon: LucideIcons.mail,
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Authentication Key
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const FieldLabel(label: 'AUTHENTICATION KEY'),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Forgot Key?',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const CustomInputField(
-            hint: '••••••••',
-            icon: LucideIcons.key,
-            isPassword: true,
-          ),
-          
-          const SizedBox(height: 40),
-          
-          // Initialize Access Button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF2563EB),
-                    Color(0xFF1E40AF),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  Widget destination;
-                  switch (selectedRole) {
-                    case UserRole.student:
-                      destination = const DashboardPage();
-                      break;
-                    case UserRole.instructor:
-                      destination = const InstructorDashboardPage();
-                      break;
-                    case UserRole.admin:
-                      destination = const AdminDashboardPage();
-                      break;
-                  }
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => destination),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Initialize Access',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(LucideIcons.arrowRight, size: 18, color: Colors.white),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 8),
+            CustomInputField(
+              hint: '••••••••',
+              icon: LucideIcons.key,
+              isPassword: true,
+              obscureText: _obscurePassword,
+              controller: _passwordController,
+              onToggleObscure: () {
+                setState(() => _obscurePassword = !_obscurePassword);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) => _handleLogin(),
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-           .shimmer(delay: 3.seconds, duration: 2.seconds, color: Colors.white.withValues(alpha: 0.1)),
-        ],
+
+            const SizedBox(height: 40),
+
+            // Initialize Access Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: _isLoading
+                      ? LinearGradient(
+                          colors: [
+                            const Color(0xFF2563EB).withValues(alpha: 0.6),
+                            const Color(0xFF1E40AF).withValues(alpha: 0.6),
+                          ],
+                        )
+                      : const LinearGradient(
+                          colors: [
+                            Color(0xFF2563EB),
+                            Color(0xFF1E40AF),
+                          ],
+                        ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Authenticating...',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Initialize Access',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(LucideIcons.arrowRight, size: 18, color: Colors.white),
+                          ],
+                        ),
+                ),
+              ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .shimmer(delay: 3.seconds, duration: 2.seconds, color: Colors.white.withValues(alpha: 0.1)),
+          ],
+        ),
       ),
     ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.95, 0.95));
-  }
-}
-
-class RoleTab extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const RoleTab({
-    super.key,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.cardColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              letterSpacing: 1.2,
-              color: isActive ? Colors.white : AppTheme.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -369,12 +469,22 @@ class CustomInputField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final bool isPassword;
+  final bool obscureText;
+  final TextEditingController? controller;
+  final String? Function(String?)? validator;
+  final VoidCallback? onToggleObscure;
+  final void Function(String)? onFieldSubmitted;
 
   const CustomInputField({
     super.key,
     required this.hint,
     required this.icon,
     this.isPassword = false,
+    this.obscureText = false,
+    this.controller,
+    this.validator,
+    this.onToggleObscure,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -384,14 +494,29 @@ class CustomInputField extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: TextField(
-        obscureText: isPassword,
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword && obscureText,
+        validator: validator,
+        onFieldSubmitted: onFieldSubmitted,
         style: const TextStyle(color: Colors.black, fontSize: 16),
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon: Icon(icon, size: 18),
-          suffixIcon: isPassword ? const Icon(LucideIcons.eye, size: 18) : null,
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    obscureText ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                  ),
+                  onPressed: onToggleObscure,
+                )
+              : null,
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          errorStyle: GoogleFonts.outfit(
+            fontSize: 11,
+            color: Colors.red[700],
+          ),
         ),
       ),
     );
