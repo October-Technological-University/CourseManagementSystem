@@ -18,7 +18,7 @@ class ApiService {
   /// The currently authenticated user, populated after a successful login.
   UserModel? currentUser;
 
-  // ── Singleton ──────────────────────────────────────────────────────────
+  // ── Singletoon ──────────────────────────────────────────────────────────
   factory ApiService() {
     _instance ??= ApiService._internal();
     return _instance!;

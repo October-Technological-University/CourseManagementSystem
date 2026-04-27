@@ -1,4 +1,4 @@
-/// Represents a user returned from the API after login.
+/// Represents a users returned from the API after login.
 class UserModel {
   final int id;
   final String name;
