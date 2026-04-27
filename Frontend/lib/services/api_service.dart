@@ -9,7 +9,7 @@ import 'package:course_management_frontend/models/user_model.dart';
 /// Uses session-based authentication. On web, the browser handles cookies
 /// automatically when [withCredentials] is enabled on [BrowserClient].
 class ApiService {
-  // ── Configuration ──────────────────────────────────────────────────────
+  // ── Configurations ──────────────────────────────────────────────────────
   static const String baseUrl = 'https://course-management-system-axbne5a2chd6a3dz.southafricanorth-01.azurewebsites.net';
 
   static ApiService? _instance;

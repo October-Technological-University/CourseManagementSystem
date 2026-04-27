@@ -3,7 +3,7 @@ class UserModel {
   final int id;
   final String name;
   final String email;
-  final String role; // 'student', 'instructor', or 'admin'
+  final String role; // 'students', 'instructor', or 'admin'
 
   const UserModel({
     required this.id,
