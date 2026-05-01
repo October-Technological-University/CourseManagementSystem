@@ -4,6 +4,7 @@ require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../Middleware/FileUploadMiddleware.php';
 require_once __DIR__ . '/../../BLL/Services/FileAttachmentService.php';
+require_once __DIR__ . '/../../BLL/Services/CourseService.php';
 require_once __DIR__ . '/../../utils/FileStorageHelper.php';
 
 class FileAttachmentController extends BaseController
@@ -28,29 +29,37 @@ class FileAttachmentController extends BaseController
             AuthMiddleware::requireRole('instructor');
             $userId = $user->getId();
 
-            
             // Get POST data
             $courseId = $_POST['course_id'] ?? null;
             $subtype = $_POST['subtype'] ?? null;
             
-            $course = $this->courseService->getById($_POST['course_id'] ?? 0); // Validate course exists
-            if (!$course) {
-                $this->error('Course not found', 404);
+            if (!$courseId) {
+                self::error('course_id is required', 400);
                 return;
             }
 
-            if ($course['data'] !== $userId && strtolower($user->getRole()) !== 'admin') {
-                $this->error('Forbidden. You are not the instructor of this course.', 403);
+            $courseService = new CourseService();
+            $courseResult = $courseService->getById((int)$courseId); 
+            if (!$courseResult['success']) {
+                self::error('Course not found', 404);
                 return;
             }
 
-            if (!$courseId || !$subtype) {
-                $this->error('course_id and subtype are required', 400);
+            $courseDTO = $courseResult['data'];
+            $role = strtolower($user->getRole());
+
+            if ($role !== 'admin' && $courseDTO->instructor_id != $userId) {
+                self::error('Forbidden (FAC-U). You are not the instructor of this course.', 403);
+                return;
+            }
+
+            if (!$subtype) {
+                self::error('subtype is required', 400);
                 return;
             }
 
             if (!in_array($subtype, ['assignment', 'resource'])) {
-                $this->error('subtype must be assignment or resource', 400);
+                self::error('subtype must be assignment or resource', 400);
                 return;
             }
 
@@ -62,18 +71,23 @@ class FileAttachmentController extends BaseController
             }
 
             // Upload file via service
-            $result = $this->fileAttachmentService->uploadFile($fileData, $userId, 'course', $courseId, $subtype);
+            $result = $this->fileAttachmentService->uploadFile($fileData, $userId, 'course', (int)$courseId, $subtype);
 
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 400);
+                self::error(implode(', ', $result['errors']), 400);
                 return;
             }
 
             $response = $result['data'];
-            $response->file_url = $result['file_url'];
-            $this->success($response, 'File uploaded successfully', 201);
+            if (method_exists($response, 'toArray')) {
+                $data = $response->toArray();
+                $data['file_url'] = $result['file_url'];
+                self::success($data, 'File uploaded successfully', 201);
+            } else {
+                self::success($response, 'File uploaded successfully', 201);
+            }
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -90,14 +104,14 @@ class FileAttachmentController extends BaseController
 
             // Validate ID
             if (!is_numeric($id)) {
-                $this->error('Invalid file ID', 400);
+                self::error('Invalid file ID', 400);
                 return;
             }
 
             // Get file info
             $result = $this->fileAttachmentService->getFileById($id);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
@@ -123,11 +137,11 @@ class FileAttachmentController extends BaseController
                 $isEnrolled   = $enrollmentRepo->isEnrolled($fileDTO->course_id, $userId);
 
                 if (!$isInstructor && !$isEnrolled) {
-                    $this->error('Forbidden. You are not enrolled in this course.', 403);
+                    self::error('Forbidden. You are not enrolled in this course.', 403);
                     return;
                 }
             } else {
-                $this->error('Forbidden', 403);
+                self::error('Forbidden', 403);
                 return;
             }
 
@@ -135,7 +149,7 @@ class FileAttachmentController extends BaseController
             $filePath = FileStorageHelper::getStoragePath($fileDTO->course_id ? 'course' : 'profile', $fileDTO->course_id) . $fileDTO->stored_name;
 
             if (!file_exists($filePath)) {
-                $this->error('File not found on disk', 500);
+                self::error('File not found on disk', 500);
                 return;
             }
 
@@ -147,7 +161,7 @@ class FileAttachmentController extends BaseController
             readfile($filePath);
             exit;
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -164,14 +178,14 @@ class FileAttachmentController extends BaseController
 
             // Validate ID
             if (!is_numeric($id)) {
-                $this->error('Invalid file ID', 400);
+                self::error('Invalid file ID', 400);
                 return;
             }
 
             // Get file to check ownership
             $result = $this->fileAttachmentService->getFileById($id);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
@@ -179,20 +193,20 @@ class FileAttachmentController extends BaseController
 
             // Permission check: uploader or admin
             if ($fileDTO->uploaded_by !== $userId && $user->getRole() !== 'admin') {
-                $this->error('Forbidden', 403);
+                self::error('Forbidden', 403);
                 return;
             }
 
             // Delete file
             $deleteResult = $this->fileAttachmentService->deleteFile($id);
             if (!$deleteResult['success']) {
-                $this->error(implode(', ', $deleteResult['errors']), 500);
+                self::error(implode(', ', $deleteResult['errors']), 500);
                 return;
             }
 
-            $this->success(null, 'File deleted successfully');
+            BaseController::success(null, 'File deleted successfully');
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -208,14 +222,14 @@ class FileAttachmentController extends BaseController
 
             // Validate course ID
             if (!is_numeric($courseId)) {
-                $this->error('Invalid course ID', 400);
+                self::error('Invalid course ID', 400);
                 return;
             }
 
             // Get files
             $result = $this->fileAttachmentService->getFilesByCourseId($courseId);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
@@ -227,7 +241,7 @@ class FileAttachmentController extends BaseController
                 'count' => $result['count']
             ]);
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -243,14 +257,14 @@ class FileAttachmentController extends BaseController
 
             // Validate course ID
             if (!is_numeric($courseId)) {
-                $this->error('Invalid course ID', 400);
+                self::error('Invalid course ID', 400);
                 return;
             }
 
             // Get assignments
             $result = $this->fileAttachmentService->getAssignmentsByCourseId($courseId);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
@@ -262,7 +276,7 @@ class FileAttachmentController extends BaseController
                 'count' => $result['count']
             ]);
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -278,14 +292,14 @@ class FileAttachmentController extends BaseController
 
             // Validate course ID
             if (!is_numeric($courseId)) {
-                $this->error('Invalid course ID', 400);
+                self::error('Invalid course ID', 400);
                 return;
             }
 
             // Get resources
             $result = $this->fileAttachmentService->getResourcesByCourseId($courseId);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
@@ -297,7 +311,7 @@ class FileAttachmentController extends BaseController
                 'count' => $result['count']
             ]);
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -313,20 +327,20 @@ class FileAttachmentController extends BaseController
 
             // Validate ID
             if (!is_numeric($id)) {
-                $this->error('Invalid file ID', 400);
+                self::error('Invalid file ID', 400);
                 return;
             }
 
             // Get file
             $result = $this->fileAttachmentService->getFileById($id);
             if (!$result['success']) {
-                $this->error(implode(', ', $result['errors']), 404);
+                self::error(implode(', ', $result['errors']), 404);
                 return;
             }
 
-            $this->success($result['data']);
+            BaseController::success($result['data']);
         } catch (Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage(), 500);
+            self::error('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 

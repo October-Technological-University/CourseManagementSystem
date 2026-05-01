@@ -4,6 +4,16 @@
 Database.Local.php
 DataSeed.Local.php
 
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+**/[Bb]in/
+**/[Ob]ject/
+**/obj/
+.vs/
+
 # Ahmed's PC
 /UnitTesting
 /DAL/Tests

@@ -65,7 +65,7 @@ class CourseController extends BaseController
         $role = strtolower($user->getRole());
 
         if (!in_array($role, ['admin', 'instructor'])) {
-            self::error('Forbidden. Only admins and instructors can create courses.', 403);
+            self::error('Forbidden (CC-C). Only admins and instructors can create courses.', 403);
             return;
         }
 
@@ -88,12 +88,13 @@ class CourseController extends BaseController
     public function generateCode($id){
         $user = AuthMiddleware::requireRole('instructor');
 
-        $course = $this->courseService->getById($id);
-        if (!$course['success']) {
+        $courseResult = $this->courseService->getById($id);
+        if (!$courseResult['success']) {
             self::error('Course not found', 404);
             return;
         }
-        if ($course['data']->instructor_id !== $user->getId()) {
+        $course = $courseResult['data'];
+        if ($course->getInstructorId() != $user->getId()) {
             self::error('Forbidden. You can only generate invite codes for your own courses.', 403);
             return;
         }
@@ -122,8 +123,8 @@ class CourseController extends BaseController
 
         $course = $result['data'];
 
-        if ($role !== 'admin' && $course->instructor_id !== $user->getId()) {
-            self::error('Forbidden. You can only update your own courses.', 403);
+        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
+            self::error('Forbidden. Only the course instructor or an admin can update your own courses.', 403);
             return;
         }
 
@@ -140,20 +141,33 @@ class CourseController extends BaseController
 
     /**
      * DELETE /api/courses/{id}
-     * Protected: admin only.
+     * Protected: admin or course instructor.
      */
     public function delete(int $id)
     {
-        AuthMiddleware::requireRole('admin');
+        $user = AuthMiddleware::requireAuth();
+        $role = strtolower($user->getRole());
 
-        $result = $this->courseService->delete($id);
-
-        if ($result['success']) {
-            self::success(null, $result['message']);
+        $result = $this->courseService->getById($id);
+        if (!$result['success']) {
+            self::error('Course not found', 404);
             return;
         }
 
-        self::error(implode(', ', $result['errors']), 404);
+        $course = $result['data'];
+        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
+            self::error('Forbidden. Only the course instructor or an admin can delete this course.', 403);
+            return;
+        }
+
+        $deleteResult = $this->courseService->delete($id);
+
+        if ($deleteResult['success']) {
+            self::success(null, $deleteResult['message']);
+            return;
+        }
+
+        self::error(implode(', ', $deleteResult['errors']), 400);
     }
 
     /**
@@ -171,7 +185,8 @@ class CourseController extends BaseController
             return;
         }
 
-        if ($role !== 'admin' && $result['data']->instructor_id !== $user->getId()) {
+        $course = $result['data'];
+        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
             self::error('Forbidden. Only the course instructor or an admin can upload a course image.', 403);
             return;
         }

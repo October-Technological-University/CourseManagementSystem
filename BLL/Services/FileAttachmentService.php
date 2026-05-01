@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Mappers/FileAttachmentMapper.php';
+require_once __DIR__ . '/../../DAL/Entities/FileAttachment.php';
 require_once __DIR__ . '/../../DAL/DTOs/FileDTOs.php';
 require_once __DIR__ . '/../../DAL/Repository/FileAttachmentRepository.php';
 require_once __DIR__ . '/../../DAL/Repository/UserRepository.php';
@@ -60,10 +61,12 @@ class FileAttachmentService
             }
 
             // Store file on filesystem
-            $storedFile = FileStorageHelper::store($fileData, $type, $courseId);
-            if (!$storedFile) {
-                return ['success' => false, 'errors' => ['Failed to store file on disk']];
+            $storageResult = FileStorageHelper::store($fileData, $type, $courseId);
+            if (!$storageResult['success']) {
+                return ['success' => false, 'errors' => [$storageResult['error'] ?? 'Failed to store file on disk']];
             }
+
+            $storedFile = $storageResult['data'];
 
             // Create FileAttachment entity
             $fileEntity = new FileAttachment(

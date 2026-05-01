@@ -44,4 +44,31 @@ class FileAttachmentResponseDTO
     }
 }
 
+/**
+ * DTO for creating a file attachment
+ */
+class FileAttachmentRequestDTO
+{
+    public $filename;
+    public $stored_name;
+    public $file_path;
+    public $mime_type;
+    public $file_size;
+    public $uploaded_by;
+    public $course_id;
+    public $subtype;
+
+    public function __construct($filename, $stored_name, $file_path, $mime_type, $file_size, $uploaded_by, $course_id = null, $subtype = null)
+    {
+        $this->filename = $filename;
+        $this->stored_name = $stored_name;
+        $this->file_path = $file_path;
+        $this->mime_type = $mime_type;
+        $this->file_size = $file_size;
+        $this->uploaded_by = $uploaded_by;
+        $this->course_id = $course_id;
+        $this->subtype = $subtype;
+    }
+}
+
 

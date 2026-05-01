@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../utils/FileStorageHelper.php';
+require_once __DIR__ . '/../../DAL/Entities/FileAttachment.php';
+require_once __DIR__ . '/../../DAL/DTOs/FileDTOs.php';
 
 /**
  * FileAttachmentMapper

@@ -1,0 +1,101 @@
+@model List<CourseViewModel>
+@{
+    ViewData["Title"] = "Home Page";
+    bool isAuthenticated = ViewBag.IsAuthenticated ?? false;
+    var user = ViewBag.UserInfo as UserViewModel;
+}
+
+<div class="text-center mb-5">
+    <h1 class="display-4">Welcome to Course Management System</h1>
+    <p class="lead">Explore our courses and start learning today!</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row mb-4">
+    <div class="col-md-8 offset-md-2">
+        <form asp-action="Index" method="get" class="d-flex">
+            <input type="text" name="keyword" class="form-control me-2" placeholder="Search for courses..." value="@Context.Request.Query["keyword"]" />
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    @if (Model.Any())
+    {
+        @foreach (var course in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrEmpty(course.CourseImageUrl))
+                    {
+                        <img src="@course.CourseImageUrl" class="card-img-top" alt="@course.Name" style="height: 200px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-light text-center py-5 border-bottom" style="height: 200px;">
+                            <i class="bi bi-book display-4 text-muted"></i>
+                            <p class="text-muted">No Image Available</p>
+                        </div>
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@course.Name</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Code: @course.Code</h6>
+                        <p class="card-text text-truncate" style="max-height: 3em;">@course.Description</p>
+                        <p class="card-text">
+                            <small class="text-muted">Instructor: @course.InstructorName</small><br />
+                            <small class="text-muted">Capacity: @course.EnrolledCount / @course.Capacity</small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        @if (isAuthenticated)
+                        {
+                            @if (string.Equals(user?.Role, "student", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <form asp-action="Enroll" method="post">
+                                    <input type="hidden" name="courseId" value="@course.Id" />
+                                    <button type="submit" class="btn btn-success w-100">Enroll Now</button>
+                                </form>
+                            }
+                            else if (user?.Id == course.InstructorId)
+                            {
+                                <a asp-controller="Course" asp-action="Details" asp-route-id="@course.Id" class="btn btn-primary w-100">Manage Course</a>
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <span class="badge bg-info text-dark">Logged in as Instructor</span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary w-100">Login to Enroll</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12 text-center">
+            <p class="text-muted">No courses found matching your search.</p>
+        </div>
+    }
+</div>

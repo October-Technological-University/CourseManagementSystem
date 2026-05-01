@@ -99,6 +99,19 @@ class EnrollmentController extends BaseController
 
         if ($role === 'student') {
             $studentId = $user->getId();
+        } elseif ($role === 'instructor') {
+            // Check if this instructor actually teaches this course
+            $courseRepo = new CourseRepository();
+            $course = $courseRepo->getById($courseId);
+            if (!$course || $course->getInstructorId() != $user->getId()) {
+                self::error('Forbidden (EC-D-I). You can only drop students from your own courses.', 403);
+                return;
+            }
+            if (!isset($data['student_id'])) {
+                self::error('student_id is required', 400);
+                return;
+            }
+            $studentId = (int)$data['student_id'];
         } elseif ($role === 'admin') {
             if (!isset($data['student_id'])) {
                 self::error('student_id is required', 400);
@@ -106,7 +119,7 @@ class EnrollmentController extends BaseController
             }
             $studentId = (int)$data['student_id'];
         } else {
-            self::error('Forbidden.', 403);
+            self::error('Forbidden (EC-D).', 403);
             return;
         }
 
@@ -130,7 +143,7 @@ class EnrollmentController extends BaseController
         $role = strtolower($user->getRole());
 
         if ($role === 'student') {
-            self::error('Forbidden.', 403);
+            self::error('Forbidden (EC-GS-S). Students cannot view student lists.', 403);
             return;
         }
 
