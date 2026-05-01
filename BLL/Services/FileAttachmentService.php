@@ -128,6 +128,29 @@ class FileAttachmentService
     }
 
     /**
+     * Get file attachment by stored name
+     *
+     * @param string $storedName Unique stored filename
+     * @return array Response with file data or error
+     */
+    public function getFileByStoredName(string $storedName): array
+    {
+        try {
+            $file = $this->fileAttachmentRepository->getByStoredName($storedName);
+            if (!$file) {
+                return ['success' => false, 'errors' => ['File not found']];
+            }
+
+            return [
+                'success' => true,
+                'data' => $this->fileAttachmentMapper->toDTO($file)
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'errors' => ['An error occurred: ' . $e->getMessage()]];
+        }
+    }
+
+    /**
      * Get all files for a course
      *
      * @param int $courseId Course ID
@@ -143,11 +166,15 @@ class FileAttachmentService
             }
 
             $files = $this->fileAttachmentRepository->getByCourseId($courseId);
+            
+            // Filter out cover images from the general files list
+            $files = array_filter($files, fn($file) => $file->getSubtype() !== 'cover');
+            
             $filesDTO = array_map(fn($file) => $this->fileAttachmentMapper->toDTO($file), $files);
 
             return [
                 'success' => true,
-                'data' => $filesDTO,
+                'data' => array_values($filesDTO),
                 'count' => count($filesDTO)
             ];
         } catch (Exception $e) {

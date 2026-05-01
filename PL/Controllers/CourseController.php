@@ -94,7 +94,7 @@ class CourseController extends BaseController
             return;
         }
         $course = $courseResult['data'];
-        if ($course->getInstructorId() != $user->getId()) {
+        if ($course->instructor_id != $user->getId()) {
             self::error('Forbidden. You can only generate invite codes for your own courses.', 403);
             return;
         }
@@ -123,7 +123,7 @@ class CourseController extends BaseController
 
         $course = $result['data'];
 
-        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
+        if ($role !== 'admin' && $course->instructor_id != $user->getId()) {
             self::error('Forbidden. Only the course instructor or an admin can update your own courses.', 403);
             return;
         }
@@ -155,7 +155,7 @@ class CourseController extends BaseController
         }
 
         $course = $result['data'];
-        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
+        if ($role !== 'admin' && $course->instructor_id != $user->getId()) {
             self::error('Forbidden. Only the course instructor or an admin can delete this course.', 403);
             return;
         }
@@ -186,7 +186,7 @@ class CourseController extends BaseController
         }
 
         $course = $result['data'];
-        if ($role !== 'admin' && $course->getInstructorId() != $user->getId()) {
+        if ($role !== 'admin' && $course->instructor_id != $user->getId()) {
             self::error('Forbidden. Only the course instructor or an admin can upload a course image.', 403);
             return;
         }

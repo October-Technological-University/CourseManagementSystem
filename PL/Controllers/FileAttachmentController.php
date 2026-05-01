@@ -351,11 +351,6 @@ class FileAttachmentController extends BaseController
     public function serve($storedName)
     {
         try {
-            // Get query parameters
-            $type = $_GET['type'] ?? 'profile';
-            $courseId = $_GET['course_id'] ?? null;
-            $subtype = $_GET['subtype'] ?? null;
-
             // Sanitize stored name to prevent path traversal
             if (preg_match('/[^a-zA-Z0-9._-]/', $storedName)) {
                 header("HTTP/1.0 400 Bad Request");
@@ -363,28 +358,47 @@ class FileAttachmentController extends BaseController
                 return;
             }
 
-            // Determine file path based on type
-            if ($type === 'course' && $courseId) {
-                $filePath = FileStorageHelper::getStoragePath('course', $courseId) . $storedName;
-            } else {
-                // For profile pictures, we need to determine the user ID from the stored name or query
-                // Since profile pictures are stored in /uploads/profiles/{userId}/
-                // We can try multiple user IDs or extract from path
-                // For now, we'll scan common profile directory
-                $filePath = BASE_PATH . 'PL/public/uploads/profiles/*/' . $storedName;
-                $matches = glob($filePath);
-                if (empty($matches)) {
-                    header("HTTP/1.0 404 Not Found");
-                    echo json_encode(['error' => 'File not found']);
-                    return;
-                }
-                $filePath = $matches[0];
-            }
-
-            // Check if file exists
-            if (!file_exists($filePath)) {
+            // Get file metadata from database to find the actual path
+            $result = $this->fileAttachmentService->getFileByStoredName($storedName);
+            if (!$result['success']) {
                 header("HTTP/1.0 404 Not Found");
                 echo json_encode(['error' => 'File not found']);
+                return;
+            }
+
+            $fileDTO = $result['data'];
+            $filePath = $fileDTO->file_path;
+
+            // Check if file exists on disk
+            if (!file_exists($filePath)) {
+                // Fallback 1: Try to reconstruct path relative to current BASE_PATH
+                $pos = strpos($filePath, 'PL/public/uploads');
+                if ($pos !== false) {
+                    $relativePath = substr($filePath, $pos);
+                    $fallbackPath = BASE_PATH . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+                    if (file_exists($fallbackPath)) {
+                        $filePath = $fallbackPath;
+                    }
+                }
+            }
+
+            // Fallback 2: Calculate path using FileStorageHelper logic
+            if (!file_exists($filePath)) {
+                $type = $fileDTO->course_id ? 'course' : 'profile';
+                if ($fileDTO->subtype === 'cover') $type = 'cover';
+                $calculatedPath = FileStorageHelper::getStoragePath($type, $fileDTO->course_id) . $fileDTO->stored_name;
+                if (file_exists($calculatedPath)) {
+                    $filePath = $calculatedPath;
+                }
+            }
+
+            if (!file_exists($filePath)) {
+                header("HTTP/1.0 404 Not Found");
+                echo json_encode([
+                    'error' => 'File not found on disk',
+                    'debug_stored_path' => $fileDTO->file_path,
+                    'current_base' => BASE_PATH
+                ]);
                 return;
             }
 
@@ -393,7 +407,7 @@ class FileAttachmentController extends BaseController
             $mimeType = finfo_file($finfo, $filePath);
             finfo_close($finfo);
             if (!$mimeType) {
-                $mimeType = 'application/octet-stream';
+                $mimeType = $fileDTO->mime_type ?? 'application/octet-stream';
             }
 
             // Set headers for inline display (images will show in browser, others may trigger download)
@@ -403,9 +417,9 @@ class FileAttachmentController extends BaseController
 
             // For images, use inline display; for other files, use attachment
             if (strpos($mimeType, 'image') === 0) {
-                header('Content-Disposition: inline; filename="' . basename($storedName) . '"');
+                header('Content-Disposition: inline; filename="' . basename($fileDTO->filename) . '"');
             } else {
-                header('Content-Disposition: attachment; filename="' . basename($storedName) . '"');
+                header('Content-Disposition: attachment; filename="' . basename($fileDTO->filename) . '"');
             }
 
             readfile($filePath);

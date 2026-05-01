@@ -14,9 +14,10 @@ class CourseMapper
      * @param Course $course The course entity from database
      * @param int $enrolledCount Number of students currently enrolled
      * @param string|null $instructorName Name of the course instructor (first_name + last_name)
+     * @param string|null $courseImageUrl URL to the course cover image
      * @return CourseResponseDTO The response DTO with computed fields
      */
-    public function toDTO(Course $course, int $enrolledCount = 0, ?string $instructorName = null): CourseResponseDTO
+    public function toDTO(Course $course, int $enrolledCount = 0, ?string $instructorName = null, ?string $courseImageUrl = null): CourseResponseDTO
     {
         return new CourseResponseDTO(
             $course->getId(),
@@ -30,32 +31,35 @@ class CourseMapper
             $course->getCourseImageId(),
             $instructorName,
             $enrolledCount,
-            $course->getCreatedAt()
+            $course->getCreatedAt(),
+            $courseImageUrl
         );
     }
 
     /**
      * Convert array of Course entities to array of CourseResponseDTOs
      * 
-     * Note: This method requires context data (enrolledCounts, instructorNames) to be passed
+     * Note: This method requires context data (enrolledCounts, instructorNames, courseImageUrls) to be passed
      * or will fetch minimal data. Services should orchestrate fetching enrolled counts
      * and instructor names for efficiency.
      * 
      * @param array $courses Array of Course entities
-     * @param array $context Optional context with 'enrolledCounts' and 'instructorNames' keyed by course id
+     * @param array $context Optional context with 'enrolledCounts', 'instructorNames', and 'courseImageUrls' keyed by course id
      * @return array Array of CourseResponseDTO objects
      */
     public function toDTOList(array $courses, array $context = []): array
     {
         $enrolledCounts = $context['enrolledCounts'] ?? [];
         $instructorNames = $context['instructorNames'] ?? [];
+        $courseImageUrls = $context['courseImageUrls'] ?? [];
 
-        return array_map(function ($course) use ($enrolledCounts, $instructorNames) {
+        return array_map(function ($course) use ($enrolledCounts, $instructorNames, $courseImageUrls) {
             $courseId = $course->getId();
             return $this->toDTO(
                 $course,
                 $enrolledCounts[$courseId] ?? 0,
-                $instructorNames[$courseId] ?? null
+                $instructorNames[$courseId] ?? null,
+                $courseImageUrls[$courseId] ?? null
             );
         }, $courses);
     }

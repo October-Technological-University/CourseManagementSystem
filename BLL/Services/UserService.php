@@ -40,10 +40,14 @@ class UserService
         if (!$user) {
             return ['success' => false, 'errors' => ['User not found']];
         }
-        $userDto = $this->mapper->toDTO($user);
+
+        $profilePictureUrl = null;
         $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($id);
-        $userDto->profile_picture_url = $profilePicture;
-        return ['success' => true, 'data' => $userDto];
+        if ($profilePicture) {
+            $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+        }
+
+        return ['success' => true, 'data' => $this->mapper->toDTO($user, $profilePictureUrl)];
     }
 
     public function getAllStudents(): array
@@ -51,7 +55,7 @@ class UserService
         $students = $this->userRepo->getAllStudents();
         return [
             'success' => true,
-            'data' => $this->mapper->toDTOList($students),
+            'data' => $this->buildDTOList($students),
             'count' => count($students)
         ];
     }
@@ -61,9 +65,21 @@ class UserService
         $instructors = $this->userRepo->getAllInstructors();
         return [
             'success' => true,
-            'data' => $this->mapper->toDTOList($instructors),
+            'data' => $this->buildDTOList($instructors),
             'count' => count($instructors)
         ];
+    }
+
+    private function buildDTOList(array $users): array
+    {
+        return array_map(function ($user) {
+            $profilePictureUrl = null;
+            $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($user->getId());
+            if ($profilePicture) {
+                $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+            }
+            return $this->mapper->toDTO($user, $profilePictureUrl);
+        }, $users);
     }
 
     public function getInstructorById(int $id): array

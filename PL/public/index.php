@@ -1,5 +1,5 @@
 <?php
-// 5
+// 16
 // ---- CORS — must be FIRST, before anything else ----
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Credentials: true");
@@ -12,15 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 // ---- end CORS ----
 
-// Use dirname to go up to the main root
-define('BASE_PATH', dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
-
-// Load environment variables (Docker env vars take precedence over .env file)
-require_once BASE_PATH . 'vendor/autoload.php';
-$dotenvPath = BASE_PATH . 'config';
-if (file_exists($dotenvPath . DIRECTORY_SEPARATOR . '.env')) {
-    Dotenv\Dotenv::createImmutable($dotenvPath)->load();
-}
+// Load environment variables and autoloader
+require_once dirname(__DIR__, 2) . '/config/bootstrap.php';
 
 // Now the paths will resolve correctly as .../CourseManagementSystem/DAL/
 require_once BASE_PATH . 'DAL/Database/DBContext.php';

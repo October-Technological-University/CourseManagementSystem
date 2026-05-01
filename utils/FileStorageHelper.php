@@ -145,12 +145,7 @@ class FileStorageHelper
      */
     public static function getFileUrl($storedName, $courseId = null, $subtype = null)
     {
-        // If courseId is set, it's a course file; otherwise it's a profile picture
-        if ($courseId !== null) {
-            return "/api/files/serve/{$storedName}?type=course&course_id={$courseId}&subtype={$subtype}";
-        } else {
-            return "/api/files/serve/{$storedName}?type=profile";
-        }
+        return "/api/files/serve/{$storedName}";
     }
 
     /**

@@ -19,7 +19,8 @@ class Database
 
         // 2. Tell mysqli to use SSL (The parameters are: key, cert, ca, capath, cipher)
         // For Azure, passing NULLs is often enough to initiate a basic secure handshake
-        $this->conn->ssl_set(NULL, NULL, '/var/www/ssl/DigiCertGlobalRootG2.crt.pem', NULL, NULL);
+        $ssl_cert = __DIR__ . '/../../DigiCertGlobalRootG2.crt.pem';
+        $this->conn->ssl_set(NULL, NULL, $ssl_cert, NULL, NULL);
 
         // 3. Connect using real_connect
         // The flag MYSQLI_CLIENT_SSL is the key here

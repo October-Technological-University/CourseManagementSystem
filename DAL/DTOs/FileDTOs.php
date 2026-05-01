@@ -69,6 +69,20 @@ class FileAttachmentRequestDTO
         $this->course_id = $course_id;
         $this->subtype = $subtype;
     }
+
+    public static function fromArray($data)
+    {
+        return new self(
+            $data['filename'] ?? null,
+            $data['stored_name'] ?? null,
+            $data['file_path'] ?? null,
+            $data['mime_type'] ?? null,
+            $data['file_size'] ?? null,
+            $data['uploaded_by'] ?? null,
+            $data['course_id'] ?? null,
+            $data['subtype'] ?? null
+        );
+    }
 }
 
 

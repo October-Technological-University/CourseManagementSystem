@@ -18,7 +18,7 @@ DataSeed.Local.php
 /UnitTesting
 /DAL/Tests
 /DAL/Database/DataSeed.php
-
+/.VSCodeCounter
 
 # Ignore environment files
 /config/.env

@@ -41,6 +41,9 @@ class InitialCreate
             // Create file_attachments table (depends on courses and users)
             $this->createFileAttachmentsTable();
 
+            // Ensure subtype ENUM is updated (migration for existing DBs)
+            $this->conn->query("ALTER TABLE `file_attachments` MODIFY COLUMN `subtype` ENUM('assignment', 'resource', 'cover') NULL");
+
             // Add foreign key from users to file_attachments (profile picture)
             $this->addProfilePictureForeignKey();
 
@@ -148,7 +151,7 @@ class InitialCreate
             `mime_type` VARCHAR(100) NOT NULL,
             `file_size` INT NOT NULL,
             `course_id` INT NULL,
-            `subtype` ENUM('assignment', 'resource') NULL,
+            `subtype` ENUM('assignment', 'resource', 'cover') NULL,
             `uploaded_by` INT NULL,
             `uploaded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY `uk_stored_name` (`stored_name`),
