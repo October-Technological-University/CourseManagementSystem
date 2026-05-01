@@ -24,3 +24,4 @@ if (file_exists($dotenvPath . DIRECTORY_SEPARATOR . '.env')) {
     $dotenv->load();
 }
 // Note: If .env doesn't exist, we assume environment variables are set via the server/Docker.
+?>
