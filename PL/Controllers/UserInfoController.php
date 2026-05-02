@@ -26,6 +26,6 @@ class UserInfoController extends BaseController
         $userInfo = $this->userInfoService->getUserInfo($user);
 
         // Return success response
-        self::success($userInfo, 'User information retrieved successfully');
+        self::success($userInfo, 'User information retrieved successfully [v2]');
     }
 }

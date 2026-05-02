@@ -44,6 +44,7 @@ class UserResponseDTO
     public $email;
     public $first_name;
     public $last_name;
+    public $name; // Full name for compatibility
     public $role;
     public $profile_picture_id;
     public $created_at;
@@ -55,6 +56,7 @@ class UserResponseDTO
         $this->email = $email;
         $this->first_name = $first_name;
         $this->last_name = $last_name;
+        $this->name = trim($first_name . ' ' . $last_name);
         $this->role = $role;
         $this->profile_picture_id = $profile_picture_id;
         $this->created_at = $created_at;
@@ -68,6 +70,7 @@ class UserResponseDTO
             'email' => $this->email,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
+            'name' => $this->name,
             'role' => $this->role,
             'profile_picture_id' => $this->profile_picture_id,
             'created_at' => $this->created_at,
