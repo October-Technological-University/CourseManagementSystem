@@ -13,9 +13,10 @@ class FileAttachmentResponseDTO
     public $uploaded_by;
     public $course_id;
     public $subtype;
+    public $file_path; // Absolute path on disk
     public $file_url; // URL to access the file via server
 
-    public function __construct($id, $filename, $stored_name, $mime_type, $file_size, $uploaded_by, $course_id = null, $subtype = null, $file_url = null)
+    public function __construct($id, $filename, $stored_name, $mime_type, $file_size, $uploaded_by, $course_id = null, $subtype = null, $file_url = null, $file_path = null)
     {
         $this->id = $id;
         $this->filename = $filename;
@@ -26,6 +27,7 @@ class FileAttachmentResponseDTO
         $this->course_id = $course_id;
         $this->subtype = $subtype;
         $this->file_url = $file_url;
+        $this->file_path = $file_path;
     }
 
     public function toArray()
@@ -39,7 +41,8 @@ class FileAttachmentResponseDTO
             'uploaded_by' => $this->uploaded_by,
             'course_id' => $this->course_id,
             'subtype' => $this->subtype,
-            'file_url' => $this->file_url
+            'file_url' => $this->file_url,
+            'file_path' => $this->file_path
         ];
     }
 }

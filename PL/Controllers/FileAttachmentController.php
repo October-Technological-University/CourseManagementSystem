@@ -146,7 +146,9 @@ class FileAttachmentController extends BaseController
             }
 
             // Resolve file path
-            $filePath = FileStorageHelper::getStoragePath($fileDTO->course_id ? 'course' : 'profile', $fileDTO->course_id) . $fileDTO->stored_name;
+            $type = $fileDTO->course_id ? 'course' : 'profile';
+            if ($fileDTO->subtype === 'cover') $type = 'cover';
+            $filePath = FileStorageHelper::getStoragePath($type, $fileDTO->course_id) . $fileDTO->stored_name;
 
             if (!file_exists($filePath)) {
                 self::error('File not found on disk', 500);

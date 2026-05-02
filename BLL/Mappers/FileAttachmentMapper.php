@@ -49,7 +49,8 @@ class FileAttachmentMapper
             $file->getUploadedBy(),
             $file->getCourseId(),
             $file->getSubtype(),
-            $fileUrl
+            $fileUrl,
+            $file->getFilePath()
         );
     }
 
