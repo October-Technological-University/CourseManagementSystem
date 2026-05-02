@@ -15,8 +15,8 @@ class Constants
         'text/plain' => 'txt',
     ];
 
-    public const FILE_STORAGE_PATH = __DIR__ . '../PL/public/uploads/documentations/';
-    public const IMAGES_STORAGE_PATH = __DIR__ . '../PL/public/uploads/images/';
+    public const FILE_STORAGE_PATH = __DIR__ . '/../PL/public/uploads/documentations/';
+    public const IMAGES_STORAGE_PATH = __DIR__ . '/../PL/public/uploads/images/';
     public const SERVER_BASE_URL = 'http://localhost:8000/';
 
 }

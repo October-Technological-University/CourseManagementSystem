@@ -103,9 +103,17 @@ class CourseService
             ? $instructor->getFirstName() . ' ' . $instructor->getLastName()
             : null;
 
+        $courseImageUrl = null;
+        if ($course->getCourseImageId()) {
+            $image = $this->fileAttachmentRepo->getById($course->getCourseImageId());
+            if ($image) {
+                $courseImageUrl = FileStorageHelper::getFileUrl($image->getStoredName(), $course->getId(), $image->getSubtype());
+            }
+        }
+
         return [
             'success' => true,
-            'data'    => $this->mapper->toDTO($course, $enrolled, $instructorName),
+            'data'    => $this->mapper->toDTO($course, $enrolled, $instructorName, $courseImageUrl),
         ];
     }
 
@@ -207,7 +215,16 @@ class CourseService
             $name       = $instructor
                 ? $instructor->getFirstName() . ' ' . $instructor->getLastName()
                 : null;
-            return $this->mapper->toDTO($course, $enrolled, $name);
+            
+            $courseImageUrl = null;
+            if ($course->getCourseImageId()) {
+                $image = $this->fileAttachmentRepo->getById($course->getCourseImageId());
+                if ($image) {
+                    $courseImageUrl = FileStorageHelper::getFileUrl($image->getStoredName(), $course->getId(), $image->getSubtype());
+                }
+            }
+            
+            return $this->mapper->toDTO($course, $enrolled, $name, $courseImageUrl);
         }, $courses);
     }
     public function uploadCourseImage(array $fileData, int $courseId, int $userId): array                                                                                                   
@@ -224,7 +241,7 @@ class CourseService
         $oldImageId = $course->getCourseImageId();                                                                                                                                          
         $oldImage = $oldImageId ? $this->fileAttachmentRepo->getById($oldImageId) : null;                                                                                                   
                                                                                                                                                                                             
-        $uploadResult = $this->fileAttachmentService->uploadFile($fileData, $userId, 'cover', null, null);                                                                                  
+        $uploadResult = $this->fileAttachmentService->uploadFile($fileData, $userId, 'cover', $courseId, 'cover');                                                                                  
         if (!$uploadResult['success']) {                                                                                                                                                    
             return $uploadResult;                                                                                                                                                           
         }                                                                                                                                                                                   

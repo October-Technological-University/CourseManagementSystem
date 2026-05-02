@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../DAL/Entities/User.php';
+require_once __DIR__ . '/../../DAL/DTOs/UserDTOs.php';
+require_once __DIR__ . '/../../utils/FileStorageHelper.php';
 
 /**
  * UserMapper
@@ -17,6 +20,16 @@ class UserMapper
      */
     public function toDTO(User $user, ?string $profilePictureUrl = null): UserResponseDTO
     {
+        if ($profilePictureUrl === null && $user->getProfilePictureId()) {
+            require_once __DIR__ . '/../../DAL/Repository/FileAttachmentRepository.php';
+            require_once __DIR__ . '/../../utils/FileStorageHelper.php';
+            $fileRepo = new FileAttachmentRepository();
+            $file = $fileRepo->getById($user->getProfilePictureId());
+            if ($file) {
+                $profilePictureUrl = FileStorageHelper::getFileUrl($file->getStoredName());
+            }
+        }
+
         return new UserResponseDTO(
             $user->getId(),
             $user->getEmail(),

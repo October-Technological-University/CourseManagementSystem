@@ -57,9 +57,10 @@ class CourseResponseDTO
     public $start_date;
     public $end_date;
     public $CourseImageId;
+    public $course_image_url;
     public $created_at;
 
-    public function __construct($id, $name, $code, $instructor_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null, $instructor_name = null, $enrolled_count = 0, $created_at = null)
+    public function __construct($id, $name, $code, $instructor_id, $start_date, $end_date, $description = null, $capacity = 30, $CourseImageId = null, $instructor_name = null, $enrolled_count = 0, $created_at = null, $course_image_url = null)
     {
         $this->id = $id;
         $this->name = $name;
@@ -72,6 +73,7 @@ class CourseResponseDTO
         $this->start_date = $start_date;
         $this->end_date = $end_date;
         $this->CourseImageId = $CourseImageId;
+        $this->course_image_url = $course_image_url;
         $this->created_at = $created_at;
     }
 
@@ -89,6 +91,7 @@ class CourseResponseDTO
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
             'CourseImageId' => $this->CourseImageId,
+            'course_image_url' => $this->course_image_url,
             'created_at' => $this->created_at
         ];
     }

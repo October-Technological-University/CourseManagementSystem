@@ -14,30 +14,48 @@ class FileStorageHelper
      * @param array $fileData Array from FileUploadMiddleware::process()
      * @param string $type 'profile', 'course', 'cover', or 'general'
      * @param int|null $id User ID or Course ID for subdirectory
-     * @return array|false File data for database storage
+     * @return array Response with success, data, and error
      */
     public static function store($fileData, $type = 'general', $id = null)
     {
         $destination = self::getStoragePath($type, $id);
         $fullPath = $destination . $fileData['stored_name'];
 
-        // Ensure directory exists
+        // Ensure directory exists with broad permissions for cloud environments
         if (!is_dir($destination)) {
-            mkdir($destination, 0755, true);
+            if (!mkdir($destination, 0777, true)) {
+                $err = "Failed to create directory: " . $destination;
+                error_log("FileStorageHelper Error: " . $err);
+                return ['success' => false, 'error' => $err];
+            }
+            chmod($destination, 0777); 
+        }
+
+        if (!is_writable($destination)) {
+            $err = "Destination directory is not writable: " . $destination;
+            error_log("FileStorageHelper Error: " . $err);
+            return ['success' => false, 'error' => $err];
         }
 
         // Move uploaded file
         if (!move_uploaded_file($fileData['tmp_path'], $fullPath)) {
-            return false;
+            $err = "Failed to move file from " . $fileData['tmp_path'] . " to " . $fullPath;
+            error_log("FileStorageHelper Error: " . $err);
+            return ['success' => false, 'error' => $err];
         }
 
+        chmod($fullPath, 0666); 
+
         return [
-            'filename'    => $fileData['filename'],
-            'stored_name' => $fileData['stored_name'],
-            'file_path'   => $fullPath,
-            'mime_type'   => $fileData['mime_type'],
-            'file_size'   => $fileData['size'],
-            'url'         => self::getPublicUrl($fileData['stored_name'], $type, $id),
+            'success' => true,
+            'data' => [
+                'filename'    => $fileData['filename'],
+                'stored_name' => $fileData['stored_name'],
+                'file_path'   => $fullPath,
+                'mime_type'   => $fileData['mime_type'],
+                'file_size'   => $fileData['size'],
+                'url'         => self::getPublicUrl($fileData['stored_name'], $type, $id),
+            ]
         ];
     }
 
@@ -74,14 +92,30 @@ class FileStorageHelper
      */
     public static function getStoragePath($type, $id = null)
     {
+        // On Azure/Linux, we might not have write access to the project folder.
+        // We will try to use the public uploads folder first, then fallback to a writable temp dir.
         $base = BASE_PATH . 'PL/public/uploads/';
+        
+        if (!is_dir($base)) {
+            @mkdir($base, 0777, true);
+        }
+
+        // If not writable, use a more reliable location like /tmp or similar in Azure
+        if (!is_writable($base)) {
+            $base = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cms_uploads' . DIRECTORY_SEPARATOR;
+            if (!is_dir($base)) {
+                @mkdir($base, 0777, true);
+            }
+        }
+        
+        $resolvedBase = rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
         return match($type) {
-            'profile' => $base . 'profiles/' . ($id ?? 'temp') . '/',
-            'course'  => $base . 'courses/' . ($id ?? 'temp') . '/',
-            'cover'   => $base . 'covers/',
-            'general' => $base . 'files/',
-            default   => $base . 'misc/',
+            'profile' => $resolvedBase . 'profiles' . DIRECTORY_SEPARATOR . ($id ?? 'temp') . DIRECTORY_SEPARATOR,
+            'course'  => $resolvedBase . 'courses' . DIRECTORY_SEPARATOR . ($id ?? 'temp') . DIRECTORY_SEPARATOR,
+            'cover'   => $resolvedBase . 'covers' . DIRECTORY_SEPARATOR,
+            'general' => $resolvedBase . 'files' . DIRECTORY_SEPARATOR,
+            default   => $resolvedBase . 'misc' . DIRECTORY_SEPARATOR,
         };
     }
 
@@ -111,12 +145,7 @@ class FileStorageHelper
      */
     public static function getFileUrl($storedName, $courseId = null, $subtype = null)
     {
-        // If courseId is set, it's a course file; otherwise it's a profile picture
-        if ($courseId !== null) {
-            return "/api/files/serve/{$storedName}?type=course&course_id={$courseId}&subtype={$subtype}";
-        } else {
-            return "/api/files/serve/{$storedName}?type=profile";
-        }
+        return "/api/files/serve/{$storedName}";
     }
 
     /**

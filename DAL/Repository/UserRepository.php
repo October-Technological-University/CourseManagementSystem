@@ -214,17 +214,20 @@ class UserRepository extends BaseRepository
      */
     private function mapRowToUser($row)
     {
+        // Handle potential case differences in column names
+        $data = array_change_key_case($row, CASE_LOWER);
+
         $user = new User(
-            $row['email'],
-            $row['password'],
-            $row['first_name'],
-            $row['last_name'],
-            $row['role'],
-            $row['profile_picture_id']
+            $data['email'] ?? '',
+            $data['password'] ?? '',
+            $data['first_name'] ?? '',
+            $data['last_name'] ?? '',
+            $data['role'] ?? 'student',
+            $data['profile_picture_id'] ?? null
         );
 
-        $user->setId($row['id']);
-        $user->setCreatedAt($row['created_at']);
+        $user->setId($data['id'] ?? null);
+        $user->setCreatedAt($data['created_at'] ?? null);
 
         return $user;
     }

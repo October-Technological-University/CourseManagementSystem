@@ -9,20 +9,11 @@ class Security
     {
         if (self::$loaded) return;
 
-        $envPath = defined('BASE_PATH')
-            ? BASE_PATH . 'config/.env'
-            : dirname(__DIR__) . '/config/.env';
-
-        $env = parse_ini_file($envPath);
-        if ($env === false) {
-            throw new \RuntimeException('Failed to read encryption configuration from .env');
-        }
-
-        self::$cipher = $env['ENCRYPTION_CIPHER'] ?? 'aes-256-cbc';
-        self::$key = $env['ENCRYPTION_KEY'] ?? '';
+        self::$cipher = $_ENV['ENCRYPTION_CIPHER'] ?? 'aes-256-cbc';
+        self::$key = $_ENV['ENCRYPTION_KEY'] ?? '';
 
         if (empty(self::$key)) {
-            throw new \RuntimeException('ENCRYPTION_KEY must be set in config/.env');
+            throw new \RuntimeException('ENCRYPTION_KEY must be set in environment');
         }
 
         self::$loaded = true;

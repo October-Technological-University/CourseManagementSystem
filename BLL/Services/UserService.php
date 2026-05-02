@@ -40,10 +40,14 @@ class UserService
         if (!$user) {
             return ['success' => false, 'errors' => ['User not found']];
         }
-        $userDto = $this->mapper->toDTO($user);
+
+        $profilePictureUrl = null;
         $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($id);
-        $userDto->profile_picture_url = $profilePicture;
-        return ['success' => true, 'data' => $userDto];
+        if ($profilePicture) {
+            $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+        }
+
+        return ['success' => true, 'data' => $this->mapper->toDTO($user, $profilePictureUrl)];
     }
 
     public function getAllStudents(): array
@@ -51,7 +55,7 @@ class UserService
         $students = $this->userRepo->getAllStudents();
         return [
             'success' => true,
-            'data' => $this->mapper->toDTOList($students),
+            'data' => $this->buildDTOList($students),
             'count' => count($students)
         ];
     }
@@ -61,9 +65,21 @@ class UserService
         $instructors = $this->userRepo->getAllInstructors();
         return [
             'success' => true,
-            'data' => $this->mapper->toDTOList($instructors),
+            'data' => $this->buildDTOList($instructors),
             'count' => count($instructors)
         ];
+    }
+
+    private function buildDTOList(array $users): array
+    {
+        return array_map(function ($user) {
+            $profilePictureUrl = null;
+            $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($user->getId());
+            if ($profilePicture) {
+                $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+            }
+            return $this->mapper->toDTO($user, $profilePictureUrl);
+        }, $users);
     }
 
     public function getInstructorById(int $id): array
@@ -86,7 +102,7 @@ class UserService
         return ['success' => true, 'data' => $this->mapper->toDTO($user)];
     }
 
-    public function update(array $data): array
+    public function update(int $userId, array $data): array
     {
         if (!$this->validator->validateRequired($data, ['email', 'first_name', 'last_name'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
@@ -96,23 +112,37 @@ class UserService
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
-        $user = $this->userRepo->getByEmail($data['email']);
+        $user = $this->userRepo->getById($userId);
         if (!$user) {
             return ['success' => false, 'errors' => ['User not found']];
+        }
+
+        // Check if email is already taken by another user
+        $existingUser = $this->userRepo->getByEmail($data['email']);
+        if ($existingUser && $existingUser->getId() !== $userId) {
+            return ['success' => false, 'errors' => ['Email already in use']];
         }
 
         $this->mapper->updateEntity($user, new UserRequestDTO(
             $data['email'],
             null,
             $data['first_name'],
-            $data['last_name']
+            $data['last_name'],
+            $data['role'] ?? null
         ));
         $this->userRepo->update($user);
-        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($user->getId()));
+        
+        $profilePictureUrl = null;
+        $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($userId);
+        if ($profilePicture) {
+            $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+        }
+
+        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($user->getId()), $profilePictureUrl);
 
         return [
             'success' => true,
-            'user' => $updatedUser
+            'data' => $updatedUser
         ];
     }
 
@@ -190,5 +220,25 @@ class UserService
         $this->userRepo->updateProfilePicture($userId, null);
 
         return ['success' => true, 'message' => 'Profile picture removed successfully'];
+    }
+
+    /**
+     * Get user info formatted for the frontend
+     * 
+     * @param User $user The authenticated user entity
+     * @return array The user info containing id, name, email, and role
+     */
+    public function getUserInfo($user): array
+    {
+        $profilePictureUrl = null;
+        $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($user->getId());
+        if ($profilePicture) {
+            $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+        }
+        
+        return [
+            'success' => true,
+            'data' => $this->mapper->toDTO($user, $profilePictureUrl)->toArray()
+        ];
     }
 }
