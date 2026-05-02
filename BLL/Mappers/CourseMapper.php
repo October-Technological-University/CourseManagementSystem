@@ -39,10 +39,6 @@ class CourseMapper
     /**
      * Convert array of Course entities to array of CourseResponseDTOs
      * 
-     * Note: This method requires context data (enrolledCounts, instructorNames, courseImageUrls) to be passed
-     * or will fetch minimal data. Services should orchestrate fetching enrolled counts
-     * and instructor names for efficiency.
-     * 
      * @param array $courses Array of Course entities
      * @param array $context Optional context with 'enrolledCounts', 'instructorNames', and 'courseImageUrls' keyed by course id
      * @return array Array of CourseResponseDTO objects
@@ -119,8 +115,6 @@ class CourseMapper
         if ($dto->CourseImageId !== null) {
             $course->setCourseImageId($dto->CourseImageId);
         }
-
-        // Note: code, instructor_id, and created_at are NOT updated (immutable fields)
     }
 }
 ?>

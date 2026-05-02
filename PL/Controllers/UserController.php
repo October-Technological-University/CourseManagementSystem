@@ -119,16 +119,28 @@ class UserController extends BaseController
         $user = AuthMiddleware::requireAuth();
         $id = $user->getId();
 
-        if ($user->getId() != $id && !AuthMiddleware::requireRole('admin')) {
-            self::error('Forbidden. You can only delete your own account.', 403);
-            return;
-        }
-
         $result = $this->userService->delete($id);
         if ($result['success']) {
             self::success(null, 'Account deleted successfully');
         } else {
             $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'Failed to delete account');
+            self::error($error, 400);
+        }
+    }
+
+    /**
+     * DELETE /api/users/{id}
+     * Admin only: delete any user account
+     */
+    public function deleteUser(int $id)
+    {
+        AuthMiddleware::requireRole('admin');
+        
+        $result = $this->userService->delete($id);
+        if ($result['success']) {
+            self::success(null, 'User deleted successfully');
+        } else {
+            $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'Failed to delete user');
             self::error($error, 400);
         }
     }

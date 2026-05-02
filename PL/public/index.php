@@ -1,16 +1,9 @@
 <?php
-// 16
-// ---- CORS — must be FIRST, before anything else ----
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-// if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-//     http_response_code(204);
-//     exit;
-// }
-// ---- end CORS ----
 define('BASE_PATH', dirname(__DIR__, 2) . '/');
 
 // Simple native .env loader
@@ -59,13 +52,6 @@ try {
     BaseController::error('Database error: ' . $e->getMessage(), 500);
     exit;
 }
-
-// ============================================================
-// ROUTER CONFIGURATION
-// Register your routes here in the format:
-// 'METHOD' => ['route/path' => callback]
-// For parameterized routes, use {param} syntax
-// ============================================================
 
 $router = [
     'GET' => [
@@ -126,6 +112,7 @@ $router = [
         'api/courses/{id}' => fn($id) => (new CourseController())->delete((int) $id),
         'api/enrollments/drop' => fn() => (new EnrollmentController())->drop(),
         'api/users/delete' => fn() => (new UserController())->deleteAccount(),
+        'api/users/{id}' => fn($id) => (new UserController())->deleteUser((int) $id),
     ]
 ];
 
@@ -146,28 +133,6 @@ $routePatterns = [
         'api/courses/{id}/course-image' => fn($id) => (new CourseController())->removeCourseImage((int) $id),
     ]
 ];
-
-// ============================================================
-// HOW TO REGISTER CONTROLLERS (Pattern for later):
-// ============================================================
-//
-// 1. Import the controller:
-//    require_once __DIR__ . '/../Controllers/UserController.php';
-//
-// 2. Add route to router array:
-//    'GET' => [
-//        'api/users' => fn() => (new UserController())->index()
-//    ],
-//    'POST' => [
-//        'api/users' => fn() => (new UserController())->create(BaseController::getJsonInput())
-//    ]
-//
-// 3. For routes with parameters (like /api/users/5):
-//    Use pattern matching and extract ID from URI
-//
-// NOTE: Controller methods should call exit() after sending response
-// to prevent further execution
-// ============================================================
 
 // Route matching with parameter support
 try {

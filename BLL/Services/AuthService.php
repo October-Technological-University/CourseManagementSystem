@@ -57,9 +57,8 @@ class AuthService
             $role = $data['role'] ?? 'student'
         ));
         $isCreated = $this->userRepository->create($userEntity);
-        $createdUser = $this->userMapper->toDTO($this->userRepository->getById($isCreated)); // To get the created user with its ID and othe sql side generated fields
+        $createdUser = $this->userMapper->toDTO($this->userRepository->getById($isCreated));
 
-        // Return success response with user data (excluding sensitive info)
         return [
             'success' => true,
             'user' => $createdUser
@@ -88,18 +87,13 @@ class AuthService
         if (!Security::verifyPassword($data['password'], $user->getPassword())) {
             return ['success' => false, 'errors' => ['Invalid email or password']];
         }
-        // 1. SET THE REMEMBER ME COOKIE HERE
-        // Usually triggered if a "Remember Me" checkbox was checked in the UI
-        // if (isset($data['remember']) && $data['remember'] === true) {
+
         Security::setRememberMeCookie([
             'id' => $user->getId(),
             'role' => $user->getRole(),
             'email' => $user->getEmail()
         ]);
-        // }
 
-
-        // Return success response with user data and token
         return [
             'success' => true,
             'user' => $this->userMapper->toDTO($user),
@@ -107,8 +101,6 @@ class AuthService
     }
     public function changePassword($currentPassword, $newPassword)
     {
-        // 1. Checks the remember_me token
-        // We look for the cookie and attempt to decrypt it
         $token = $_COOKIE['remember_me'] ?? null;
         if (!$token) {
             return ['success' => false, 'error' => 'Authentication token missing.'];
@@ -121,30 +113,24 @@ class AuthService
 
         $userId = $userData['id'];
 
-        // 2. Checks if the new password is the same as the current password
-        // (Pre-validation check to save DB resources)
         if ($currentPassword === $newPassword) {
             return ['success' => false, 'error' => 'New password cannot be the same as the current password.'];
         }
 
-        // Fetch the user from the database to get the current hash
         $user = $this->userRepository->getById($userId);
 
         if (!$user) {
             return ['success' => false, 'error' => 'User not found.'];
         }
 
-        // 3. Checks if the current password is correct
         if (!Security::verifyPassword($currentPassword, $user->getPassword())) {
             return ['success' => false, 'error' => 'Current password is incorrect.'];
         }
 
-        // 4. Validate the new password using Validator's functions
         if (!$this->validator->validatePassword($newPassword)) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
-        // If all validations pass, proceed to update
         $newHash = Security::hashPassword($newPassword);
         $user->setPassword($newHash);
         $updateStmt = $this->userRepository->update($user);

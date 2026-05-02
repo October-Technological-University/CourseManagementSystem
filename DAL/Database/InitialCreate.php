@@ -42,10 +42,8 @@ class InitialCreate
             // Add foreign key from courses to file_attachments (course image)
             $this->addCourseImageForeignKey();
 
-            // echo "✓ All tables created successfully!\n";
             return true;
         } catch (Exception $e) {
-            // echo "✗ Error creating tables: " . $e->getMessage() . "\n";
             return false;
         }
     }
@@ -71,7 +69,6 @@ class InitialCreate
         if (!$this->conn->query($sql)) {
             throw new Exception("Error creating users table: " . $this->conn->error);
         }
-        // echo "✓ Created users table\n";
     }
 
     /**
@@ -99,7 +96,6 @@ class InitialCreate
         if (!$this->conn->query($sql)) {
             throw new Exception("Error creating courses table: " . $this->conn->error);
         }
-        // echo "✓ Created courses table\n";
     }
 
     /**
@@ -122,7 +118,6 @@ class InitialCreate
         if (!$this->conn->query($sql)) {
             throw new Exception("Error creating course_students table: " . $this->conn->error);
         }
-        // echo "✓ Created course_students table\n";
     }
 
     /**
@@ -143,7 +138,7 @@ class InitialCreate
             `mime_type` VARCHAR(100) NOT NULL,
             `file_size` INT NOT NULL,
             `course_id` INT NULL,
-            `subtype` ENUM('assignment', 'resource') NULL,
+            `subtype` ENUM('assignment', 'resource', 'cover') NULL,
             `uploaded_by` INT NULL,
             `uploaded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY `uk_stored_name` (`stored_name`),
@@ -157,7 +152,6 @@ class InitialCreate
         if (!$this->conn->query($sql)) {
             throw new Exception("Error creating file_attachments table: " . $this->conn->error);
         }
-        // echo "✓ Created file_attachments table\n";
     }
 
     /**
@@ -181,9 +175,6 @@ class InitialCreate
             if (!$this->conn->query($sql)) {
                 throw new Exception("Error adding profile picture foreign key: " . $this->conn->error);
             }
-            // echo "✓ Added profile picture foreign key\n";
-        } else {
-            // echo "✓ Profile picture foreign key already exists\n";
         }
     }
 
@@ -208,9 +199,6 @@ class InitialCreate
             if (!$this->conn->query($sql)) {
                 throw new Exception("Error adding course image foreign key: " . $this->conn->error);
             }
-            // echo "✓ Added course image foreign key\n";
-        } else {
-            // echo "✓ Course image foreign key already exists\n";
         }
     }
 
@@ -225,12 +213,10 @@ class InitialCreate
 
             foreach ($tables as $table) {
                 $this->conn->query("DROP TABLE IF NOT EXISTS `$table`");
-                // echo "✓ Dropped table: $table\n";
             }
 
             return true;
         } catch (Exception $e) {
-            // echo "✗ Error dropping tables: " . $e->getMessage() . "\n";
             return false;
         }
     }

@@ -65,7 +65,7 @@ class CourseController extends BaseController
         $role = strtolower($user->getRole());
 
         if (!in_array($role, ['admin', 'instructor'])) {
-            self::error('Forbidden (CC-C). Only admins and instructors can create courses.', 403);
+            self::error('Forbidden. Only admins and instructors can create courses.', 403);
             return;
         }
 

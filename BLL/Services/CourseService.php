@@ -41,7 +41,6 @@ class CourseService
         if (empty($data['code'])) {
             $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
             while ($this->courseRepo->getByCode($code) !== null) {
-                // If the generated code already exists, generate a new one
                 $code = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
                 }
             $data['code'] = $code;
@@ -240,9 +239,9 @@ class CourseService
                                                                                                                                                                                             
         $oldImageId = $course->getCourseImageId();                                                                                                                                          
         $oldImage = $oldImageId ? $this->fileAttachmentRepo->getById($oldImageId) : null;                                                                                                   
-                                                                                                                                                                                            
-        $uploadResult = $this->fileAttachmentService->uploadFile($fileData, $userId, 'cover', $courseId, 'cover');                                                                                  
-        if (!$uploadResult['success']) {                                                                                                                                                    
+
+        $uploadResult = $this->fileAttachmentService->uploadFile($fileData, $userId, 'cover', (int)$courseId, 'cover');                                                                                  
+        if (!$uploadResult['success']) {
             return $uploadResult;                                                                                                                                                           
         }                                                                                                                                                                                   
                                                                                                                                                                                             
