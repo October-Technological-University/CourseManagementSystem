@@ -116,6 +116,7 @@ $router = [
     ],
     'PUT' => [
         'api/courses/{id}' => fn($id) => (new CourseController())->update((int) $id),
+        'api/users/{id}' => fn($id) => (new UserController())->update((int) $id),
     ],
     'DELETE' => [
         'api/files/{id}' => fn($id) => (new FileAttachmentController())->delete($id),

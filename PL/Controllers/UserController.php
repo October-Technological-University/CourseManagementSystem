@@ -38,6 +38,20 @@ class UserController
         $this->respond($this->userService->getById($id));
     }
 
+    public function update(int $id)
+    {
+        $user = AuthMiddleware::requireAuth();
+        
+        // Only allow users to update their own profile, unless admin
+        if ($user->getId() !== $id && strtolower($user->getRole()) !== 'admin') {
+            BaseController::error('Forbidden. You can only update your own profile.', 403);
+            return;
+        }
+
+        $data = BaseController::getJsonInput();
+        $this->respond($this->userService->update($id, $data));
+    }
+
     public function listStudents()
     {
         AuthMiddleware::requireAuth();

@@ -102,7 +102,7 @@ class UserService
         return ['success' => true, 'data' => $this->mapper->toDTO($user)];
     }
 
-    public function update(array $data): array
+    public function update(int $userId, array $data): array
     {
         if (!$this->validator->validateRequired($data, ['email', 'first_name', 'last_name'])) {
             return ['success' => false, 'errors' => $this->validator->getErrors()];
@@ -112,9 +112,15 @@ class UserService
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
-        $user = $this->userRepo->getByEmail($data['email']);
+        $user = $this->userRepo->getById($userId);
         if (!$user) {
             return ['success' => false, 'errors' => ['User not found']];
+        }
+
+        // Check if email is already taken by another user
+        $existingUser = $this->userRepo->getByEmail($data['email']);
+        if ($existingUser && $existingUser->getId() !== $userId) {
+            return ['success' => false, 'errors' => ['Email already in use']];
         }
 
         $this->mapper->updateEntity($user, new UserRequestDTO(
@@ -124,11 +130,18 @@ class UserService
             $data['last_name']
         ));
         $this->userRepo->update($user);
-        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($user->getId()));
+        
+        $profilePictureUrl = null;
+        $profilePicture = $this->fileAttachmentRepo->getProfilePictureByUserId($userId);
+        if ($profilePicture) {
+            $profilePictureUrl = FileStorageHelper::getFileUrl($profilePicture->getStoredName());
+        }
+
+        $updatedUser = $this->mapper->toDTO($this->userRepo->getById($user->getId()), $profilePictureUrl);
 
         return [
             'success' => true,
-            'user' => $updatedUser
+            'data' => $updatedUser
         ];
     }
 
