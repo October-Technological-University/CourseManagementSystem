@@ -3,6 +3,8 @@
 require_once __DIR__ . '/UserMapper.php';
 require_once __DIR__ . '/CourseMapper.php';
 require_once __DIR__ . '/../../DAL/DTOs/UserDTOs.php';
+require_once __DIR__ . '/../../DAL/Repository/CourseStudentRepository.php';
+require_once __DIR__ . '/../../DAL/Repository/FileAttachmentRepository.php';
 
 /**
  * EnrollmentMapper
@@ -85,11 +87,26 @@ class EnrollmentMapper
     {
         $courseMapper = new CourseMapper();
         $courses = [];
+        $courseStudentRepo = new CourseStudentRepository();
+        $userRepo = new UserRepository();
+        $fileRepo = new FileAttachmentRepository();
 
         foreach ($enrollments as $enrollment) {
             $course = $this->courseRepository->getById($enrollment->getCourseId());
             if ($course) {
-                $courses[] = $courseMapper->toDTO($course);
+                $enrolled = $courseStudentRepo->getCountByCourseId($course->getId());
+                $instructor = $userRepo->getById($course->getInstructorId());
+                $instructorName = $instructor ? $instructor->getFirstName() . ' ' . $instructor->getLastName() : null;
+                
+                $courseImageUrl = null;
+                if ($course->getCourseImageId()) {
+                    $image = $fileRepo->getById($course->getCourseImageId());
+                    if ($image) {
+                        $courseImageUrl = FileStorageHelper::getFileUrl($image->getStoredName(), $course->getId(), $image->getSubtype());
+                    }
+                }
+
+                $courses[] = $courseMapper->toDTO($course, $enrolled, $instructorName, $courseImageUrl);
             }
         }
 

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../DAL/Entities/User.php';
+require_once __DIR__ . '/../Mappers/UserMapper.php';
 
 class UserInfoService
 {
@@ -12,11 +13,8 @@ class UserInfoService
      */
     public function getUserInfo(User $user): array
     {
-        return [
-            'id' => $user->getId(),
-            'name' => $user->getFirstName() . ' ' . $user->getLastName(),
-            'email' => $user->getEmail(),
-            'role' => $user->getRole()
-        ];
+        $mapper = new UserMapper();
+        $dto = $mapper->toDTO($user);
+        return $dto->toArray();
     }
 }

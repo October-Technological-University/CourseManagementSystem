@@ -70,7 +70,8 @@ class UserResponseDTO
             'last_name' => $this->last_name,
             'role' => $this->role,
             'profile_picture_id' => $this->profile_picture_id,
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at,
+            'profile_picture_url' => $this->profile_picture_url
         ];
     }
 }
