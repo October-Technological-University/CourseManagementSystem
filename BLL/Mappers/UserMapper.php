@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../DAL/Entities/User.php';
+require_once __DIR__ . '/../../DAL/DTOs/UserDTOs.php';
+require_once __DIR__ . '/../../utils/FileStorageHelper.php';
 
 /**
  * UserMapper
