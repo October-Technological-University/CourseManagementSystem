@@ -61,7 +61,8 @@ class FileAttachmentService
             }
 
             // Store file on filesystem
-            $storageResult = FileStorageHelper::store($fileData, $type, $courseId);
+            $storageId = ($type === 'profile') ? $uploadedByUserId : $courseId;
+            $storageResult = FileStorageHelper::store($fileData, $type, $storageId);
             if (!$storageResult['success']) {
                 return ['success' => false, 'errors' => [$storageResult['error'] ?? 'Failed to store file on disk']];
             }

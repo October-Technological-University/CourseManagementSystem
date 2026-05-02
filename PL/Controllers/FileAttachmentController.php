@@ -148,7 +148,8 @@ class FileAttachmentController extends BaseController
             // Resolve file path
             $type = $fileDTO->course_id ? 'course' : 'profile';
             if ($fileDTO->subtype === 'cover') $type = 'cover';
-            $filePath = FileStorageHelper::getStoragePath($type, $fileDTO->course_id) . $fileDTO->stored_name;
+            $storageId = ($type === 'profile') ? $fileDTO->uploaded_by : $fileDTO->course_id;
+            $filePath = FileStorageHelper::getStoragePath($type, $storageId) . $fileDTO->stored_name;
 
             if (!file_exists($filePath)) {
                 self::error('File not found on disk', 500);
@@ -388,9 +389,18 @@ class FileAttachmentController extends BaseController
             if (!file_exists($filePath)) {
                 $type = $fileDTO->course_id ? 'course' : 'profile';
                 if ($fileDTO->subtype === 'cover') $type = 'cover';
-                $calculatedPath = FileStorageHelper::getStoragePath($type, $fileDTO->course_id) . $fileDTO->stored_name;
+                $storageId = ($type === 'profile') ? $fileDTO->uploaded_by : $fileDTO->course_id;
+                $calculatedPath = FileStorageHelper::getStoragePath($type, $storageId) . $fileDTO->stored_name;
                 if (file_exists($calculatedPath)) {
                     $filePath = $calculatedPath;
+                }
+            }
+
+            // Fallback 3: Check 'temp' directory for legacy profile pictures
+            if (!file_exists($filePath) && (isset($type) && $type === 'profile')) {
+                $tempPath = FileStorageHelper::getStoragePath('profile', null) . $fileDTO->stored_name;
+                if (file_exists($tempPath)) {
+                    $filePath = $tempPath;
                 }
             }
 
