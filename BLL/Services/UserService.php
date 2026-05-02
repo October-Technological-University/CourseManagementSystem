@@ -127,7 +127,8 @@ class UserService
             $data['email'],
             null,
             $data['first_name'],
-            $data['last_name']
+            $data['last_name'],
+            $data['role'] ?? null
         ));
         $this->userRepo->update($user);
         

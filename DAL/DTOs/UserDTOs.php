@@ -12,7 +12,7 @@ class UserRequestDTO
     public $role;
     public $profile_picture_id;
 
-    public function __construct($email, $password, $first_name, $last_name, $role = 'student', $profile_picture_id = null)
+    public function __construct($email, $password, $first_name, $last_name, $role = null, $profile_picture_id = null)
     {
         $this->email = $email;
         $this->password = $password;
