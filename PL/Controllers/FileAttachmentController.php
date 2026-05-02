@@ -207,7 +207,7 @@ class FileAttachmentController extends BaseController
                 return;
             }
 
-            BaseController::success(null, 'File deleted successfully');
+            self::success(null, 'File deleted successfully');
         } catch (Exception $e) {
             self::error('An error occurred: ' . $e->getMessage(), 500);
         }
@@ -341,7 +341,7 @@ class FileAttachmentController extends BaseController
                 return;
             }
 
-            BaseController::success($result['data']);
+            self::success($result['data']);
         } catch (Exception $e) {
             self::error('An error occurred: ' . $e->getMessage(), 500);
         }

@@ -3,8 +3,9 @@
 require_once __DIR__ . '/../../BLL/Services/UserService.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../Middleware/FileUploadMiddleware.php';
+require_once __DIR__ . '/BaseController.php';
 
-class UserController
+class UserController extends BaseController
 {
     private $userService;
 
@@ -16,12 +17,12 @@ class UserController
     private function respond(array $result, int $successCode = 200, string $successMessage = 'Success')
     {
         if (!empty($result['success'])) {
-            BaseController::success($result['data'] ?? null, $successMessage, $successCode);
+            self::success($result['data'] ?? null, $successMessage, $successCode);
             exit;
         }
 
         $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'An error occurred');
-        BaseController::error($error, 400);
+        self::error($error, 400);
         exit;
     }
 
@@ -44,11 +45,11 @@ class UserController
         
         // Only allow users to update their own profile, unless admin
         if ($user->getId() !== $id && strtolower($user->getRole()) !== 'admin') {
-            BaseController::error('Forbidden. You can only update your own profile.', 403);
+            self::error('Forbidden. You can only update your own profile.', 403);
             return;
         }
 
-        $data = BaseController::getJsonInput();
+        $data = self::getJsonInput();
         $this->respond($this->userService->update($id, $data));
     }
 
@@ -92,7 +93,7 @@ class UserController
 
         $result = $this->userService->uploadProfilePicture($fileData, $userId);
         if ($result['success']) {
-            BaseController::success(
+            self::success(
                 [
                     'file' => $result['data'],
                     'file_url' => $result['file_url'] ?? null
@@ -104,7 +105,7 @@ class UserController
         }
 
         $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'Failed to upload profile picture');
-        BaseController::error($error, 400);
+        self::error($error, 400);
         exit;
     }
 
@@ -119,16 +120,16 @@ class UserController
         $id = $user->getId();
 
         if ($user->getId() != $id && !AuthMiddleware::requireRole('admin')) {
-            BaseController::error('Forbidden. You can only delete your own account.', 403);
+            self::error('Forbidden. You can only delete your own account.', 403);
             return;
         }
 
         $result = $this->userService->delete($id);
         if ($result['success']) {
-            BaseController::success(null, 'Account deleted successfully');
+            self::success(null, 'Account deleted successfully');
         } else {
             $error = $result['error'] ?? (isset($result['errors']) ? implode(', ', $result['errors']) : 'Failed to delete account');
-            BaseController::error($error, 400);
+            self::error($error, 400);
         }
     }
 }
