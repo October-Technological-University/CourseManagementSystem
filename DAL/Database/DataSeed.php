@@ -35,6 +35,9 @@ function dataSeedAutoload(): void {
     if (!class_exists('DBContext')) {
         require_once __DIR__ . '/DBContext.php';
     }
+    if (!class_exists('FileStorageHelper')) {
+        require_once __DIR__ . '/../../utils/FileStorageHelper.php';
+    }
 }
 
 /**
@@ -101,9 +104,11 @@ class SeedingConfig
     public bool $dryRun = false;
     public bool $verbose = false;
     public bool $clearFirst = false;
-    public int $userCount = 10;
-    public int $courseCount = 5;
-    public int $enrollmentCount = 20;
+    public int $instructorCount = 3;
+    public int $studentCount = 15;
+    public int $courseCount = 3;
+    public int $studentsPerCourse = 5;
+    public int $materialsPerCourse = 5;
     public string $defaultPassword = 'password123';
     public array $customUsers = [];
     public array $customCourses = [];
@@ -112,9 +117,9 @@ class SeedingConfig
     {
         $config = new self();
         $config->dryRun = true;
-        $config->userCount = 2;
+        $config->instructorCount = 2;
+        $config->studentCount = 5;
         $config->courseCount = 2;
-        $config->enrollmentCount = 2;
         return $config;
     }
 
@@ -135,12 +140,6 @@ class SeedingConfig
                 case '--clear':
                 case '-c':
                     $config->clearFirst = true;
-                    break;
-                case '--minimal':
-                case '-m':
-                    $config->userCount = 2;
-                    $config->courseCount = 1;
-                    $config->enrollmentCount = 2;
                     break;
             }
         }
@@ -278,44 +277,36 @@ class DatabaseSeeding implements ISeeder
         $this->log("Seeding users...");
         $users = [];
 
-        // Create default admin
-        $adminData = [
-            'email' => 'admin@admin.com',
-            'password' => $this->config->defaultPassword,
-            'first_name' => 'Admin',
-            'last_name' => 'User',
-            'role' => 'admin'
-        ];
-        $users[] = $this->createUser($adminData);
-
         // Create sample instructors
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= $this->config->instructorCount; $i++) {
             $instructorData = [
                 'email' => "instructor{$i}@example.com",
                 'password' => $this->config->defaultPassword,
                 'first_name' => "Instructor{$i}",
-                'last_name' => 'Smith',
+                'last_name' => 'Expert',
                 'role' => 'Instructor'
             ];
-            $users[] = $this->createUser($instructorData);
+            $id = $this->createUser($instructorData);
+            if ($id > 0) {
+                $users[] = $id;
+                $this->generateProfilePicture($id, "I{$i}");
+            }
         }
 
         // Create sample students
-        $count = min($this->config->userCount - count($users), $this->config->userCount);
-        for ($i = 1; $i <= $count; $i++) {
+        for ($i = 1; $i <= $this->config->studentCount; $i++) {
             $studentData = [
                 'email' => "student{$i}@example.com",
                 'password' => $this->config->defaultPassword,
                 'first_name' => "Student{$i}",
-                'last_name' => 'Doe',
+                'last_name' => 'Learner',
                 'role' => 'student'
             ];
-            $users[] = $this->createUser($studentData);
-        }
-
-        // Add custom users from config
-        foreach ($this->config->customUsers as $customUser) {
-            $users[] = $this->createUser($customUser);
+            $id = $this->createUser($studentData);
+            if ($id > 0) {
+                $users[] = $id;
+                $this->generateProfilePicture($id, "S{$i}");
+            }
         }
 
         $this->result->createdUsers = array_filter($users);
@@ -347,20 +338,23 @@ class DatabaseSeeding implements ISeeder
             ['name' => 'Data Structures', 'code' => 'CS102', 'capacity' => 35],
         ];
 
-        $count = min($this->config->courseCount, count($sampleCourses));
+        $count = max($this->config->courseCount, 3);
         for ($i = 0; $i < $count; $i++) {
-            $courseData = $sampleCourses[$i];
+            $courseData = $sampleCourses[$i % count($sampleCourses)];
+            if ($i >= count($sampleCourses)) {
+                $courseData['code'] .= "_" . ($i + 1);
+            }
+            
             $courseData['instructor_id'] = $instructorIds[$i % count($instructorIds)];
-            $courseData['description'] = "This is a sample course description for {$courseData['name']}";
+            $courseData['description'] = "This is a comprehensive course covering {$courseData['name']}.";
             $courseData['start_date'] = date('Y-m-d', strtotime('+1 week'));
             $courseData['end_date'] = date('Y-m-d', strtotime('+4 months'));
 
-            $courses[] = $this->createCourse($courseData);
-        }
-
-        // Add custom courses from config
-        foreach ($this->config->customCourses as $customCourse) {
-            $courses[] = $this->createCourse($customCourse);
+            $id = $this->createCourse($courseData);
+            if ($id > 0) {
+                $courses[] = $id;
+                $this->generateCourseCover($id, $courseData['code']);
+            }
         }
 
         $this->result->createdCourses = array_filter($courses);
@@ -385,16 +379,12 @@ class DatabaseSeeding implements ISeeder
             return $enrollments;
         }
 
-        $count = min($this->config->enrollmentCount, count($studentIds) * count($courseIds));
-        $pairs = [];
-
-        for ($i = 0; $i < $count; $i++) {
-            $studentId = $studentIds[$i % count($studentIds)];
-            $courseId = $courseIds[intdiv($i, count($studentIds)) % count($courseIds)];
-
-            $pairKey = "{$studentId}-{$courseId}";
-            if (!in_array($pairKey, $pairs)) {
-                $pairs[] = $pairKey;
+        foreach ($courseIds as $courseId) {
+            // Shuffle students to get unique random selection for each course
+            shuffle($studentIds);
+            $studentsToEnroll = array_slice($studentIds, 0, $this->config->studentsPerCourse);
+            
+            foreach ($studentsToEnroll as $studentId) {
                 $enrollments[] = $this->createEnrollment([
                     'student_id' => $studentId,
                     'course_id' => $courseId,
@@ -410,56 +400,286 @@ class DatabaseSeeding implements ISeeder
     }
 
     /**
-     * Seed file attachments
+     * Seed file attachments (Resources)
      */
     public function seedFiles(): array
     {
-        $this->log("Seeding files...");
+        $this->log("Seeding resource materials...");
         $files = [];
 
-        // In a real implementation, this would create file records
-        // For now, this is a placeholder for the interface contract
+        $courseIds = $this->getCourseIds();
+        $instructorIds = $this->getInstructorIds();
+        
+        foreach ($courseIds as $courseId) {
+            $instructorId = $instructorIds[rand(0, count($instructorIds) - 1)];
+            
+            for ($i = 1; $i <= $this->config->materialsPerCourse; $i++) {
+                $fileName = "Material_{$i}_Lecture_Notes.pdf";
+                $files[] = $this->createResourceFile($courseId, $instructorId, $fileName);
+            }
+        }
 
-        $this->result->createdFiles = $files;
+        $this->result->createdFiles = array_filter($files);
+        $this->log("Created " . count($this->result->createdFiles) . " resource files");
         return $files;
     }
 
     /**
-     * Clear all seeded data
+     * Clear all seeded data and physical files
      */
     public function clearAll(): bool
     {
-        $this->log("Clearing existing seed data...");
+        $this->log("Clearing existing seed data and files...");
 
         if ($this->config->dryRun) {
-            $this->log("Would clear: files, enrollments, courses, users");
+            $this->log("Would clear: database records and uploads directory");
             return true;
         }
 
         try {
-            // Clear in reverse dependency order
-            if ($this->fileAttachmentRepository) {
-                $this->fileAttachmentRepository->deleteAll();
+            $conn = DBContext::getInstance()->getConnection();
+            
+            // Disable FK checks for easier truncation
+            $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+            
+            $tables = ['course_students', 'file_attachments', 'courses', 'users'];
+            foreach ($tables as $table) {
+                if ($table === 'users') {
+                    // Only delete seeded users
+                    $conn->query("DELETE FROM `users` WHERE email LIKE '%@example.com' OR email = 'admin@admin.com'");
+                } else {
+                    $conn->query("TRUNCATE TABLE `$table`");
+                }
             }
-            if ($this->courseStudentRepository) {
-                $this->courseStudentRepository->deleteAll();
-            }
-            if ($this->courseRepository) {
-                $this->courseRepository->deleteAll();
-            }
-            if ($this->userRepository) {
-                // Keep users created before seeding (production safety)
-                // Or delete only seed users by email pattern
-                $this->userRepository->deleteByEmailPattern('%@example.com');
-            }
+            
+            $conn->query("SET FOREIGN_KEY_CHECKS = 1");
 
-            $this->log("Cleared existing seed data");
+            // Clean physical files
+            $uploadsBase = BASE_PATH . 'PL/public/uploads/';
+            $this->deleteDirectoryContents($uploadsBase);
+
+            $this->log("Cleared existing seed data and physical files");
             return true;
 
         } catch (Exception $e) {
             $this->result->addError('clear', $e->getMessage());
             return false;
         }
+    }
+
+    private function deleteDirectoryContents($dir): void
+    {
+        if (!is_dir($dir)) return;
+        
+        $files = array_diff(scandir($dir), ['.', '..', '.gitkeep', '.htaccess']);
+        foreach ($files as $file) {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            if (is_dir($path)) {
+                $this->deleteDirectoryContents($path);
+                @rmdir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Generate a unique profile picture for a user
+     */
+    private function generateProfilePicture(int $userId, string $initials): void
+    {
+        if ($this->config->dryRun) return;
+
+        $filename = "profile_{$userId}.png";
+        $storedName = md5($filename . time() . rand()) . ".png";
+        
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $storedName;
+        $this->createPlaceholderImage($initials, $tempPath, 200, 200, true);
+
+        $fileData = [
+            'filename' => $filename,
+            'stored_name' => $storedName,
+            'tmp_path' => $tempPath,
+            'mime_type' => 'image/png',
+            'size' => filesize($tempPath)
+        ];
+
+        $result = FileStorageHelper::store($fileData, 'profile', $userId);
+        
+        if ($result['success']) {
+            $file = new FileAttachment(
+                $filename,
+                $storedName,
+                $result['data']['file_path'],
+                'image/png',
+                $fileData['size'],
+                $userId,
+                null,
+                null
+            );
+            
+            $fileId = $this->fileAttachmentRepository->create($file);
+            $this->userRepository->updateProfilePicture($userId, $fileId);
+        }
+        
+        if (file_exists($tempPath)) @unlink($tempPath);
+    }
+
+    /**
+     * Generate a unique course cover
+     */
+    private function generateCourseCover(int $courseId, string $code): void
+    {
+        if ($this->config->dryRun) return;
+
+        $filename = "cover_{$courseId}.png";
+        $storedName = md5($filename . time() . rand()) . ".png";
+        
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $storedName;
+        $this->createPlaceholderImage($code, $tempPath, 800, 400, false);
+
+        $fileData = [
+            'filename' => $filename,
+            'stored_name' => $storedName,
+            'tmp_path' => $tempPath,
+            'mime_type' => 'image/png',
+            'size' => filesize($tempPath)
+        ];
+
+        $result = FileStorageHelper::store($fileData, 'cover', $courseId);
+        
+        if ($result['success']) {
+            $file = new FileAttachment(
+                $filename,
+                $storedName,
+                $result['data']['file_path'],
+                'image/png',
+                $fileData['size'],
+                null, // uploaded_by placeholder
+                $courseId,
+                'cover'
+            );
+            
+            $fileId = $this->fileAttachmentRepository->create($file);
+            $this->courseRepository->updateCourseImage($courseId, $fileId);
+        }
+        
+        if (file_exists($tempPath)) @unlink($tempPath);
+    }
+
+    /**
+     * Create a resource file entry and physical file
+     */
+    private function createResourceFile(int $courseId, int $userId, string $filename): ?int
+    {
+        if ($this->config->dryRun) return -rand(5000, 6000);
+
+        $seedAssetsPath = BASE_PATH . 'seed/assets/';
+        $availableFiles = [];
+        
+        if (is_dir($seedAssetsPath)) {
+            $availableFiles = array_diff(scandir($seedAssetsPath), ['.', '..']);
+        }
+
+        if (empty($availableFiles)) {
+            // Fallback to dummy PDF if no assets found
+            $storedName = md5($filename . time() . rand()) . ".pdf";
+            $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $storedName;
+            file_put_contents($tempPath, "%PDF-1.4\n% Dummy PDF for Course {$courseId}\n%%EOF");
+            $mimeType = 'application/pdf';
+        } else {
+            // Pick a random real file from assets
+            $randomFile = $availableFiles[array_rand($availableFiles)];
+            $sourcePath = $seedAssetsPath . $randomFile;
+            $extension = pathinfo($randomFile, PATHINFO_EXTENSION);
+            
+            $storedName = md5($filename . time() . rand()) . "." . $extension;
+            $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $storedName;
+            
+            if (!copy($sourcePath, $tempPath)) {
+                $this->result->addError('file', "Failed to copy seed asset: {$randomFile}");
+                return null;
+            }
+            
+            $filename = $randomFile; // Use the actual filename from the asset
+            $mimeType = $this->getMimeTypeByExtension($extension);
+        }
+
+        $fileData = [
+            'filename' => $filename,
+            'stored_name' => $storedName,
+            'tmp_path' => $tempPath,
+            'mime_type' => $mimeType,
+            'size' => filesize($tempPath)
+        ];
+
+        $result = FileStorageHelper::store($fileData, 'course', $courseId);
+        
+        if ($result['success']) {
+            $file = new FileAttachment(
+                $filename,
+                $storedName,
+                $result['data']['file_path'],
+                $mimeType,
+                $fileData['size'],
+                $userId,
+                $courseId,
+                'resource'
+            );
+            
+            $id = $this->fileAttachmentRepository->create($file);
+            if (file_exists($tempPath)) @unlink($tempPath);
+            return $id;
+        }
+        
+        if (file_exists($tempPath)) @unlink($tempPath);
+        return null;
+    }
+
+    private function getMimeTypeByExtension(string $ext): string
+    {
+        $mimes = [
+            'pdf' => 'application/pdf',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg'
+        ];
+        return $mimes[strtolower($ext)] ?? 'application/octet-stream';
+    }
+
+    /**
+     * GD Helper to create a placeholder image
+     */
+    private function createPlaceholderImage(string $text, string $path, int $width, int $height, bool $circle = false): void
+    {
+        $im = imagecreatetruecolor($width, $height);
+        
+        // Random background color
+        $bg = imagecolorallocate($im, rand(50, 200), rand(50, 200), rand(50, 200));
+        imagefill($im, 0, 0, $bg);
+        
+        if ($circle) {
+            // Circle variant for profile pictures (actually just colors the whole thing, UI will handle border-radius)
+        }
+
+        $white = imagecolorallocate($im, 255, 255, 255);
+        
+        // Using built-in font for portability
+        $fontSize = $width > 400 ? 5 : 5;
+        $charWidth = imagefontwidth($fontSize);
+        $charHeight = imagefontheight($fontSize);
+        
+        $textWidth = strlen($text) * $charWidth;
+        $x = ($width - $textWidth) / 2;
+        $y = ($height - $charHeight) / 2;
+        
+        // Scale text if possible or just use a larger built-in font
+        imagestring($im, 5, (int)$x, (int)$y, $text, $white);
+        
+        imagepng($im, $path);
+        imagedestroy($im);
     }
 
     /**

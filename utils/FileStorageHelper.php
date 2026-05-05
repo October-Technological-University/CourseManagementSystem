@@ -37,8 +37,15 @@ class FileStorageHelper
             return ['success' => false, 'error' => $err];
         }
 
-        // Move uploaded file
-        if (!move_uploaded_file($fileData['tmp_path'], $fullPath)) {
+        // Move file (handle both uploaded and local files for CLI/Seeding)
+        $moved = false;
+        if (is_uploaded_file($fileData['tmp_path'])) {
+            $moved = move_uploaded_file($fileData['tmp_path'], $fullPath);
+        } else {
+            $moved = rename($fileData['tmp_path'], $fullPath);
+        }
+
+        if (!$moved) {
             $err = "Failed to move file from " . $fileData['tmp_path'] . " to " . $fullPath;
             error_log("FileStorageHelper Error: " . $err);
             return ['success' => false, 'error' => $err];
